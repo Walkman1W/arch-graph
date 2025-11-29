@@ -22,16 +22,34 @@
 所有 React 组件遵循扁平结构，命名清晰：
 
 - **DashboardHeader.tsx**: 顶部导航和品牌标识
-- **SpeckleViewer.tsx**: 3D BIM 模型查看器包装器（Speckle iframe）
-- **ControlPanel.tsx**: 右侧命令界面和聊天历史
-- **VoiceCommander.tsx**: 语音输入集成（如已实现）
-- **GestureOverlay.tsx**: 手势识别 UI（如已实现）
+- **SpeckleViewer.tsx**: 3D BIM 模型查看器包装器（Speckle iframe 或 Three.js）
+- **GraphViewer.tsx**: Neo4j 图谱可视化组件（Cytoscape.js/D3.js）
+- **ControlPanel.tsx**: 右侧固定对话界面和聊天历史
+- **SplitPaneContainer.tsx**: 左侧上下分屏容器，管理模型和图谱的布局
+- **VoiceCommander.tsx**: 语音输入集成（可选）
+- **GestureOverlay.tsx**: 手势识别 UI（可选）
 
 **约定**:
 - 每个文件一个组件
 - PascalCase 命名，与组件名称匹配
 - 使用 TypeScript 接口定义 props 的函数式组件
 - Props 接口在组件内定义或从 `types.ts` 导入
+
+### 三分屏布局结构
+
+```
+┌─────────────────────────────────────────────────┐
+│              DashboardHeader                    │
+├──────────────────────────────┬──────────────────┤
+│                              │                  │
+│   SpeckleViewer (上)         │                  │
+│   可最大化/最小化             │  ControlPanel    │
+├──────────────────────────────┤  (固定右侧)      │
+│                              │                  │
+│   GraphViewer (下)           │                  │
+│   可最大化/最小化             │                  │
+└──────────────────────────────┴──────────────────┘
+```
 
 ## 服务层
 
@@ -93,11 +111,34 @@
   → SpeckleViewer（视觉反馈）
 ```
 
-## 未来结构（计划中）
+## 新增结构（MVP 实现）
 
-基于 PRD，预计将添加以下内容：
+基于 PRD，将添加以下内容：
 
-- `/graph/` - Neo4j 集成和 Cypher 查询生成
-- `/utils/` - 空间分析的辅助函数
-- `/hooks/` - 用于图数据的自定义 React hooks
-- 图谱可视化组件（D3.js/Cytoscape.js）
+- `/services/neo4jService.ts` - Neo4j 连接和 Cypher 查询执行
+- `/services/cypherGenerator.ts` - LLM 生成的 Cypher 查询处理
+- `/utils/` - 空间分析和图谱数据处理的辅助函数
+- `/hooks/` - 用于图数据和分屏状态的自定义 React hooks
+- `/components/GraphViewer.tsx` - 图谱可视化组件（Cytoscape.js）
+- `/components/SplitPaneContainer.tsx` - 分屏容器组件
+
+## Neo4j 数据模型
+
+### 节点类型
+- `Project`: 项目根节点
+- `Level`: 楼层
+- `Space`: 空间/房间
+- `Element`: 构件
+- `System`: 机电系统
+- `Pipe`: 管道
+- `Duct`: 风管
+- `Cable`: 电缆
+
+### 关系类型
+- `HAS_LEVEL`: Project → Level
+- `CONTAINS`: Level → Space
+- `HAS_ELEMENT`: Space → Element
+- `PART_OF_SYSTEM`: Element → System
+- `PASSES_THROUGH`: Pipe/Duct → Space
+- `CONNECTED_TO`: Element ↔ Element
+- `LOCATED_AT`: Element → Space

@@ -20,7 +20,15 @@
 
 ### 3D 可视化
 - **Speckle Viewer**: 主要的 BIM 模型查看器（嵌入式 iframe）
-- **Three.js**: 计划用于高级 3D 交互和路径可视化
+- **Three.js**: 用于高级 3D 交互、路径可视化和动画
+
+### 图数据库与可视化
+- **Neo4j**: 图数据库，存储建筑语义和空间关系
+  - 使用 Neo4j AuraDB（云）或本地 Neo4j 实例
+  - 通过 Neo4j JavaScript Driver 连接
+- **Cytoscape.js**: 图谱可视化库，展示节点和关系
+  - 支持多种布局算法（层次、力导向等）
+  - 交互式节点点击和缩放
 
 ### AI 集成
 - **Google Generative AI SDK** (`@google/genai` v1.30.0)
@@ -65,8 +73,12 @@ npm install          # 安装依赖
 ## 环境配置
 
 - **API 密钥**: 存储在 `.env.local`
-- **必需变量**: `GEMINI_API_KEY`
-- **Vite 配置**: 将环境变量暴露为 `process.env.API_KEY` 和 `process.env.GEMINI_API_KEY`
+- **必需变量**: 
+  - `GEMINI_API_KEY`: Google Gemini API 密钥
+  - `NEO4J_URI`: Neo4j 数据库连接 URI
+  - `NEO4J_USER`: Neo4j 用户名
+  - `NEO4J_PASSWORD`: Neo4j 密码
+- **Vite 配置**: 将环境变量暴露为 `process.env.*`
 
 ## 开发服务器
 
