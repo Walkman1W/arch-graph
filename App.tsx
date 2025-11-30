@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import DashboardHeader from './components/DashboardHeader';
 import SpeckleViewer from './components/SpeckleViewer';
 import ControlPanel from './components/ControlPanel';
+import QuickActionsToolbar from './components/QuickActionsToolbar';
 import { BIMQueryResponse, BIMOperation, MockBIMElement } from './types';
 
 // Mock data generator for simulation
@@ -23,6 +24,8 @@ const App: React.FC = () => {
   const [allElements] = useState<MockBIMElement[]>(generateMockElements(500));
   const [activeElements, setActiveElements] = useState<MockBIMElement[]>([]);
   const [currentFilter, setCurrentFilter] = useState<BIMQueryResponse | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setActiveElements(allElements);
@@ -30,9 +33,12 @@ const App: React.FC = () => {
 
   const handleCommand = (response: BIMQueryResponse) => {
     setCurrentFilter(response);
+    setError(null); // Clear any previous errors
+    setIsLoading(true); // Start loading
     
     if (response.operation === BIMOperation.RESET) {
       setActiveElements(allElements);
+      setIsLoading(false); // Stop loading
       return;
     }
 
@@ -51,6 +57,13 @@ const App: React.FC = () => {
     }
 
     setActiveElements(filtered);
+     
+     // Handle errors gracefully
+     if (response.operation === BIMOperation.UNKNOWN) {
+       setError(response.reasoning);
+     }
+     
+     setIsLoading(false); // Stop loading after processing
   };
 
   return (
@@ -64,6 +77,17 @@ const App: React.FC = () => {
 
           {/* Status Overlay (Top Left) */}
           <div className="absolute top-4 left-4 z-20 flex flex-col gap-2 pointer-events-none">
+             {/* Loading Indicator */}
+             {isLoading && (
+               <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-2 flex items-center gap-3 pointer-events-auto animate-fade-in">
+                 <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                 <div>
+                   <p className="text-xs text-blue-500 uppercase font-bold tracking-wider">Processing</p>
+                   <p className="text-sm font-semibold text-blue-800">AI is analyzing your request...</p>
+                 </div>
+               </div>
+             )}
+             
              <div className="bg-white/90 backdrop-blur shadow-sm border border-slate-200 rounded-lg px-4 py-2 flex items-center gap-3 pointer-events-auto">
                <div className={`w-2 h-2 rounded-full ${activeElements.length < allElements.length ? 'bg-blue-500' : 'bg-slate-300'}`}></div>
                <div>
@@ -71,6 +95,17 @@ const App: React.FC = () => {
                  <p className="text-sm font-semibold text-slate-800">{activeElements.length} / {allElements.length} Elements</p>
                </div>
              </div>
+             
+             {/* Error Display */}
+             {error && (
+               <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-2 flex items-center gap-3 pointer-events-auto animate-fade-in">
+                 <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
+                 <div>
+                   <p className="text-xs text-red-500 uppercase font-bold tracking-wider">Error</p>
+                   <p className="text-sm font-semibold text-red-800">{error}</p>
+                 </div>
+               </div>
+             )}
           </div>
 
           {/* Current Active Filter Tags (Bottom Left) */}
@@ -88,12 +123,26 @@ const App: React.FC = () => {
                )}
             </div>
           )}
+          
+          {/* Quick Actions Toolbar */}
+          <QuickActionsToolbar onCommand={handleCommand} />
         </div>
 
         {/* Right Side: Dialog State */}
         <ControlPanel 
           onCommandProcessed={handleCommand}
           filteredCount={activeElements.length}
+          totalCount={allElements.length}
+          currentFilter={currentFilter}
+          onClearFilter={() => handleCommand({
+            operation: BIMOperation.RESET,
+            category: null,
+            level: null,
+            material: null,
+            keywords: [],
+            reasoning: 'View reset to show all elements',
+            suggestions: []
+          })}
         />
       </main>
     </div>

@@ -5,9 +5,18 @@ import { parseBIMQuery } from '../services/geminiService';
 interface ControlPanelProps {
   onCommandProcessed: (response: BIMQueryResponse) => void;
   filteredCount: number;
+  totalCount: number;
+  currentFilter: BIMQueryResponse | null;
+  onClearFilter: () => void;
 }
 
-const ControlPanel: React.FC<ControlPanelProps> = ({ onCommandProcessed, filteredCount }) => {
+const ControlPanel: React.FC<ControlPanelProps> = ({ 
+  onCommandProcessed, 
+  filteredCount, 
+  totalCount, 
+  currentFilter, 
+  onClearFilter 
+}) => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -17,6 +26,8 @@ const ControlPanel: React.FC<ControlPanelProps> = ({ onCommandProcessed, filtere
       suggestions: [
         { label: 'Isolate Structure', payload: { operation: 'ISOLATE' as any, category: 'Columns', level: null, material: null } },
         { label: 'Show Level 1', payload: { operation: 'ISOLATE' as any, category: null, level: 'Level 1', material: null } },
+        { label: 'Hide Windows', payload: { operation: 'HIDE' as any, category: 'Windows', level: null, material: null } },
+        { label: 'Color Concrete', payload: { operation: 'COLOR_CODE' as any, category: null, level: null, material: 'Concrete' } },
         { label: 'Reset View', payload: { operation: 'RESET' as any, category: null, level: null, material: null } }
       ]
     }
@@ -160,9 +171,23 @@ const ControlPanel: React.FC<ControlPanelProps> = ({ onCommandProcessed, filtere
           <h2 className="font-bold text-slate-800">AI Commander</h2>
           <p className="text-xs text-slate-500">Powered by Gemini 2.5</p>
         </div>
-        <div className="flex items-center gap-2 bg-blue-50 px-3 py-1 rounded-full border border-blue-100">
-          <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
-          <span className="text-xs font-bold text-blue-700">{filteredCount} Elements</span>
+        <div className="flex items-center gap-3">
+          {/* Filter Status */}
+          {currentFilter && currentFilter.operation !== 'RESET' && (
+            <button
+              onClick={onClearFilter}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-semibold rounded-full border border-red-200 transition-colors"
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              Clear Filter
+            </button>
+          )}
+          
+          {/* Element Counter */}
+          <div className="flex items-center gap-2 bg-blue-50 px-3 py-1 rounded-full border border-blue-100">
+            <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+            <span className="text-xs font-bold text-blue-700">{filteredCount} / {totalCount}</span>
+          </div>
         </div>
       </div>
 
