@@ -1,3 +1,25 @@
+// 布局状态类型定义
+export interface LayoutState {
+  dividerPosition: number;
+  isTopPaneMaximized: boolean;
+  isBottomPaneMaximized: boolean;
+  highlightStyle: HighlightStyle;
+}
+
+export interface LayoutActions {
+  setDividerPosition: (position: number) => void;
+  maximizePane: (pane: 'top' | 'bottom') => void;
+  minimizePane: (pane: 'top' | 'bottom') => void;
+  resetLayout: () => void;
+  setHighlightStyle: (style: HighlightStyle) => void;
+}
+
+export interface HighlightStyle {
+  color: string;
+  opacity: number;
+  lineWidth: number;
+}
+
 export enum BIMOperation {
   ISOLATE = 'ISOLATE',
   HIDE = 'HIDE',

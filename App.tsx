@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import DashboardHeader from './components/DashboardHeader';
 import SpeckleViewer from './components/SpeckleViewer';
+import SplitPaneContainer from './components/SplitPaneContainer';
 import ControlPanel from './components/ControlPanel';
+import { LayoutStateProvider } from './components/LayoutStateProvider';
 import { BIMQueryResponse, BIMOperation, MockBIMElement } from './types';
 
 // Mock data generator for simulation
@@ -54,13 +56,14 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-slate-50 overflow-hidden">
-      <DashboardHeader />
+    <LayoutStateProvider>
+      <div className="flex flex-col h-screen bg-slate-50 overflow-hidden">
+        <DashboardHeader />
       
       <main className="flex-1 flex overflow-hidden">
         {/* Left Side: 3D Model & Overlays */}
         <div className="flex-1 relative bg-slate-100 min-w-0">
-          <SpeckleViewer embedUrl="https://app.speckle.systems/projects/0876633ea1/models/1e05934141?embedToken=3d3c2e0ab4878e7d01b16a1608e78e03848887eed4#embed=%7B%22isEnabled%22%3Atrue%7D" />
+          <SplitPaneContainer />
 
           {/* Status Overlay (Top Left) */}
           <div className="absolute top-4 left-4 z-20 flex flex-col gap-2 pointer-events-none">
@@ -96,7 +99,8 @@ const App: React.FC = () => {
           filteredCount={activeElements.length}
         />
       </main>
-    </div>
+      </div>
+    </LayoutStateProvider>
   );
 };
 
