@@ -63,6 +63,9 @@
   - **属性 6：最小化互斥**
   - **验证：需求 1.16**
 
+
+
+
 - [ ] 4. 更新 App.tsx 以集成三分屏布局
   - 重构 App.tsx 以使用 SplitPaneContainer
   - 用 LayoutStateProvider 包装应用程序
