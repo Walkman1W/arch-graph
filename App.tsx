@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import DashboardHeader from './components/DashboardHeader';
 import SpeckleViewer from './components/SpeckleViewer';
 import ControlPanel from './components/ControlPanel';
+import GraphViewer from './components/GraphViewer';
+import SplitPaneContainer from './components/SplitPaneContainer';
+import { LayoutStateProvider } from './components/LayoutStateProvider';
 import { BIMQueryResponse, BIMOperation, MockBIMElement } from './types';
 
 // Mock data generator for simulation
@@ -53,50 +56,45 @@ const App: React.FC = () => {
     setActiveElements(filtered);
   };
 
-  return (
-    <div className="flex flex-col h-screen bg-slate-50 overflow-hidden">
-      <DashboardHeader />
-      
-      <main className="flex-1 flex overflow-hidden">
-        {/* Left Side: 3D Model & Overlays */}
-        <div className="flex-1 relative bg-slate-100 min-w-0">
-          <SpeckleViewer embedUrl="https://app.speckle.systems/projects/0876633ea1/models/1e05934141?embedToken=3d3c2e0ab4878e7d01b16a1608e78e03848887eed4#embed=%7B%22isEnabled%22%3Atrue%7D" />
+  // 模拟图谱数据
+const mockGraphData = {
+  nodes: [
+    { id: 'project-1', label: '建筑项目', type: 'Project' },
+    { id: 'level-1', label: '一层', type: 'Level' },
+    { id: 'level-2', label: '二层', type: 'Level' },
+    { id: 'space-1', label: '大厅', type: 'Space' },
+    { id: 'space-2', label: '办公室', type: 'Space' },
+    { id: 'space-3', label: '会议室', type: 'Space' },
+    { id: 'element-1', label: '柱子', type: 'Element' },
+    { id: 'element-2', label: '墙壁', type: 'Element' },
+    { id: 'element-3', label: '窗户', type: 'Element' },
+    { id: 'system-1', label: '暖通系统', type: 'System' }
+  ],
+  edges: [
+    { id: 'edge-1', source: 'project-1', target: 'level-1', label: '包含' },
+    { id: 'edge-2', source: 'project-1', target: 'level-2', label: '包含' },
+    { id: 'edge-3', source: 'level-1', target: 'space-1', label: '包含' },
+    { id: 'edge-4', source: 'level-1', target: 'space-2', label: '包含' },
+    { id: 'edge-5', source: 'level-2', target: 'space-3', label: '包含' },
+    { id: 'edge-6', source: 'space-1', target: 'element-1', label: '包含' },
+    { id: 'edge-7', source: 'space-2', target: 'element-2', label: '包含' },
+    { id: 'edge-8', source: 'space-3', target: 'element-3', label: '包含' },
+    { id: 'edge-9', source: 'element-1', target: 'system-1', label: '属于' },
+    { id: 'edge-10', source: 'element-2', target: 'system-1', label: '属于' }
+  ]
+};
 
-          {/* Status Overlay (Top Left) */}
-          <div className="absolute top-4 left-4 z-20 flex flex-col gap-2 pointer-events-none">
-             <div className="bg-white/90 backdrop-blur shadow-sm border border-slate-200 rounded-lg px-4 py-2 flex items-center gap-3 pointer-events-auto">
-               <div className={`w-2 h-2 rounded-full ${activeElements.length < allElements.length ? 'bg-blue-500' : 'bg-slate-300'}`}></div>
-               <div>
-                 <p className="text-xs text-slate-500 uppercase font-bold tracking-wider">Visibility</p>
-                 <p className="text-sm font-semibold text-slate-800">{activeElements.length} / {allElements.length} Elements</p>
-               </div>
-             </div>
-          </div>
-
-          {/* Current Active Filter Tags (Bottom Left) */}
-          {currentFilter && currentFilter.operation !== 'RESET' && (
-            <div className="absolute bottom-4 left-4 z-20 flex flex-wrap gap-2 max-w-md pointer-events-none">
-               {currentFilter.operation && (
-                 <span className="px-3 py-1 bg-slate-900 text-white text-xs font-mono rounded-md shadow-lg">
-                   CMD: {currentFilter.operation}
-                 </span>
-               )}
-               {currentFilter.category && (
-                 <span className="px-3 py-1 bg-blue-600 text-white text-xs font-semibold rounded-md shadow-lg">
-                   {currentFilter.category}
-                 </span>
-               )}
-            </div>
-          )}
-        </div>
-
-        {/* Right Side: Dialog State */}
-        <ControlPanel 
-          onCommandProcessed={handleCommand}
-          filteredCount={activeElements.length}
+return (
+    <LayoutStateProvider>
+      <div className="flex flex-col h-screen">
+        <DashboardHeader />
+        <SplitPaneContainer
+          topPanel={<SpeckleViewer elements={activeElements} />}
+          bottomPanel={<GraphViewer data={mockGraphData} />}
+          rightPanel={<ControlPanel onCommand={handleCommand} />}
         />
-      </main>
-    </div>
+      </div>
+    </LayoutStateProvider>
   );
 };
 

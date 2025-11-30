@@ -17,6 +17,7 @@ export default defineConfig(({ mode }) => {
       resolve: {
         alias: {
           '@': path.resolve(__dirname, '.'),
+          'cytoscape': path.resolve(__dirname, 'node_modules/cytoscape/dist/cytoscape.min.js')
         }
       }
     };
