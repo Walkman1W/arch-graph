@@ -1,12 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import DashboardHeader from './components/DashboardHeader';
 import SpeckleViewer from './components/SpeckleViewer';
 import ControlPanel from './components/ControlPanel';
+import GraphViewer from './components/GraphViewer';
 import { LayoutStateProvider } from './contexts/LayoutStateProvider';
 import { I18nProvider, useI18n } from './contexts/I18nContext';
 import { ProjectProvider, useProject } from './contexts/ProjectContext';
 import { SplitPaneContainer } from './components/SplitPaneContainer';
-import { BIMQueryResponse, BIMOperation, MockBIMElement } from './types';
+import { BIMQueryResponse, BIMOperation, MockBIMElement, HighlightStyle } from './types';
+import { 
+  generateScenario, 
+  getAvailableScenarios, 
+  ScenarioType,
+  GraphNode 
+} from './services/mockGraphData';
 
 // Mock data generator for simulation
 const generateMockElements = (count: number): MockBIMElement[] => {
@@ -29,10 +36,47 @@ const AppContent: React.FC = () => {
   const [allElements] = useState<MockBIMElement[]>(generateMockElements(500));
   const [activeElements, setActiveElements] = useState<MockBIMElement[]>([]);
   const [currentFilter, setCurrentFilter] = useState<BIMQueryResponse | null>(null);
+  
+  // Graph state
+  const [currentScenario, setCurrentScenario] = useState<ScenarioType>('simple-building');
+  const [selectedGraphNodes, setSelectedGraphNodes] = useState<Set<string>>(new Set());
+  const [highlightedGraphNodes, setHighlightedGraphNodes] = useState<Map<string, HighlightStyle>>(new Map());
+  const [hoveredGraphNode, setHoveredGraphNode] = useState<string | null>(null);
+
+  // Generate graph data
+  const graphData = useMemo(() => {
+    return generateScenario(currentScenario);
+  }, [currentScenario]);
+
+  const scenarios = getAvailableScenarios();
 
   useEffect(() => {
     setActiveElements(allElements);
   }, [allElements]);
+
+  // Graph event handlers
+  const handleGraphNodeClick = useCallback((nodeId: string, node: GraphNode) => {
+    console.log('Graph node clicked:', nodeId, node);
+    setSelectedGraphNodes(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(nodeId)) {
+        newSet.delete(nodeId);
+      } else {
+        newSet.add(nodeId);
+      }
+      return newSet;
+    });
+  }, []);
+
+  const handleGraphNodeHover = useCallback((nodeId: string | null) => {
+    setHoveredGraphNode(nodeId);
+  }, []);
+
+  const handleScenarioChange = useCallback((scenario: ScenarioType) => {
+    setCurrentScenario(scenario);
+    setSelectedGraphNodes(new Set());
+    setHighlightedGraphNodes(new Map());
+  }, []);
 
   const handleCommand = (response: BIMQueryResponse) => {
     setCurrentFilter(response);
@@ -102,12 +146,32 @@ const AppContent: React.FC = () => {
                 </div>
               }
               bottomPane={
-                <div className="w-full h-full bg-gradient-to-br from-green-50 to-green-100 flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="text-6xl mb-4">🕸️</div>
-                    <h2 className="text-2xl font-bold text-slate-700 mb-2">{t('layout.graphViewer')}</h2>
-                    <p className="text-slate-600">{t('graph.placeholder')}</p>
+                <div className="w-full h-full relative">
+                  {/* Scenario selector */}
+                  <div className="absolute top-2 left-2 z-20">
+                    <select
+                      value={currentScenario}
+                      onChange={(e) => handleScenarioChange(e.target.value as ScenarioType)}
+                      className="px-2 py-1 text-xs border border-slate-300 rounded bg-white/90 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      {scenarios.map(s => (
+                        <option key={s.id} value={s.id}>{s.name}</option>
+                      ))}
+                    </select>
                   </div>
+                  <GraphViewer
+                    data={graphData}
+                    selectedNodes={selectedGraphNodes}
+                    highlightedNodes={highlightedGraphNodes}
+                    hoveredNode={hoveredGraphNode}
+                    onNodeClick={handleGraphNodeClick}
+                    onNodeHover={handleGraphNodeHover}
+                    paneState="normal"
+                    layoutMode="force"
+                    showZoomControls={true}
+                    showLegend={true}
+                    showLayoutControls={true}
+                  />
                 </div>
               }
             />
