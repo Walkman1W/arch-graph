@@ -16,7 +16,11 @@
   - **属性 7：状态持久化往返**
   - **验证：需求 1.18, 1.19**
 
-- [ ] 2. 实现带拖动功能的 SplitPaneContainer 组件
+- [x] 2. 实现带拖动功能的 SplitPaneContainer 组件
+
+
+
+
   - 创建带有上下面板插槽的 SplitPaneContainer 组件
   - 实现带拖动处理器的分隔条（mousedown、mousemove、mouseup）
   - 添加约束强制（每个面板最小 20%，最大 80%）

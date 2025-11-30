@@ -1,0 +1,143 @@
+import React, { useRef, useState, useCallback, useEffect } from 'react';
+import { useLayoutState } from '../contexts/LayoutStateProvider';
+
+interface SplitPaneContainerProps {
+  topPane: React.ReactNode;
+  bottomPane: React.ReactNode;
+  defaultSplitRatio?: number;
+  minPaneHeight?: number;
+  maxPaneHeight?: number;
+}
+
+export const SplitPaneContainer: React.FC<SplitPaneContainerProps> = ({
+  topPane,
+  bottomPane,
+  defaultSplitRatio = 0.6,
+  minPaneHeight = 0.2,
+  maxPaneHeight = 0.8,
+}) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const { dividerPosition, setDividerPosition, paneStates } = useLayoutState();
+
+  // Handle mouse down on divider
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  }, []);
+
+  // Handle mouse move during drag
+  const handleMouseMove = useCallback(
+    (e: MouseEvent) => {
+      if (!isDragging || !containerRef.current) return;
+
+      const container = containerRef.current;
+      const containerRect = container.getBoundingClientRect();
+      const containerHeight = containerRect.height;
+      const mouseY = e.clientY - containerRect.top;
+
+      // Calculate new position as ratio
+      let newPosition = mouseY / containerHeight;
+
+      // Apply constraints
+      newPosition = Math.max(minPaneHeight, Math.min(maxPaneHeight, newPosition));
+
+      setDividerPosition(newPosition);
+    },
+    [isDragging, minPaneHeight, maxPaneHeight, setDividerPosition]
+  );
+
+  // Handle mouse up to stop dragging
+  const handleMouseUp = useCallback(() => {
+    setIsDragging(false);
+  }, []);
+
+  // Handle double click to reset
+  const handleDoubleClick = useCallback(() => {
+    setDividerPosition(defaultSplitRatio);
+  }, [defaultSplitRatio, setDividerPosition]);
+
+  // Add/remove global mouse event listeners
+  useEffect(() => {
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      // Prevent text selection during drag
+      document.body.style.userSelect = 'none';
+      document.body.style.cursor = 'ns-resize';
+    } else {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.userSelect = '';
+      document.body.style.cursor = '';
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.userSelect = '';
+      document.body.style.cursor = '';
+    };
+  }, [isDragging, handleMouseMove, handleMouseUp]);
+
+  // Calculate pane heights based on state
+  const getTopPaneHeight = () => {
+    if (paneStates.model === 'maximized') return '100%';
+    if (paneStates.model === 'minimized') return '48px'; // Toolbar height
+    return `${dividerPosition * 100}%`;
+  };
+
+  const getBottomPaneHeight = () => {
+    if (paneStates.graph === 'maximized') return '100%';
+    if (paneStates.graph === 'minimized') return '48px'; // Toolbar height
+    return `${(1 - dividerPosition) * 100}%`;
+  };
+
+  const showDivider = paneStates.model === 'normal' && paneStates.graph === 'normal';
+
+  return (
+    <div
+      ref={containerRef}
+      className="flex flex-col h-full w-full relative overflow-hidden"
+    >
+      {/* Top Pane */}
+      <div
+        className="relative overflow-hidden transition-all duration-200 ease-in-out"
+        style={{
+          height: getTopPaneHeight(),
+          display: paneStates.model === 'minimized' && paneStates.graph === 'maximized' ? 'none' : 'block',
+        }}
+      >
+        {topPane}
+      </div>
+
+      {/* Divider */}
+      {showDivider && (
+        <div
+          className={`
+            relative h-2 bg-slate-300 hover:bg-slate-400 
+            cursor-ns-resize flex items-center justify-center
+            transition-colors duration-150 z-10
+            ${isDragging ? 'bg-slate-500' : ''}
+          `}
+          onMouseDown={handleMouseDown}
+          onDoubleClick={handleDoubleClick}
+        >
+          {/* Divider handle indicator */}
+          <div className="w-12 h-1 bg-slate-500 rounded-full" />
+        </div>
+      )}
+
+      {/* Bottom Pane */}
+      <div
+        className="relative overflow-hidden transition-all duration-200 ease-in-out flex-1"
+        style={{
+          height: showDivider ? getBottomPaneHeight() : '100%',
+          display: paneStates.graph === 'minimized' && paneStates.model === 'maximized' ? 'none' : 'block',
+        }}
+      >
+        {bottomPane}
+      </div>
+    </div>
+  );
+};
