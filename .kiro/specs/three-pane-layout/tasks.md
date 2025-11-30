@@ -78,7 +78,10 @@
   - **属性 1：宽度分配边界**
   - **验证：需求 1.2**
 
-- [ ] 5. 增强 ModelViewer 组件的选择和高亮支持
+- [x] 5. 增强 ModelViewer 组件的选择和高亮支持
+
+
+
   - 添加 selectedElements 和 highlightedElements 属性
   - 实现元素点击处理器，将事件传播到 LayoutStateProvider
   - 实现元素悬停处理器以进行预览高亮
@@ -92,7 +95,10 @@
   - **属性 8：模型到图谱同步**
   - **验证：需求 2.1, 2.3**
 
-- [ ] 6. 创建带 Cytoscape.js 集成的 GraphViewer 组件
+- [x] 6. 创建带 Cytoscape.js 集成的 GraphViewer 组件
+
+
+
   - 使用 React 包装器设置 Cytoscape.js
   - 从图数据实现节点和边的渲染
   - 添加带事件传播的节点点击处理器

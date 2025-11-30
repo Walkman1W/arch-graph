@@ -99,3 +99,20 @@ export interface LayoutPreferences {
   };
   timestamp: number;
 }
+
+// BIM Element Types
+export interface BIMElement {
+  id: string;
+  name: string;
+  type: string;
+  spaceId?: string;
+  systemId?: string;
+  geometry: {
+    position: [number, number, number];
+    boundingBox: {
+      min: [number, number, number];
+      max: [number, number, number];
+    };
+  };
+  properties: Record<string, any>;
+}
