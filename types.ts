@@ -44,3 +44,58 @@ export interface Message {
 }
 
 export type GestureType = 'NONE' | 'ROTATE_LEFT' | 'ROTATE_RIGHT' | 'WAVE';
+
+// Layout State Types
+export type PaneState = 'normal' | 'maximized' | 'minimized';
+export type PaneType = 'model' | 'graph';
+export type SelectionSource = 'model' | 'graph' | 'control';
+
+export interface HighlightStyle {
+  color: string;
+  category: 'space' | 'element' | 'system' | 'pipe';
+  intensity: 'preview' | 'selected' | 'result';
+}
+
+export interface LayoutState {
+  // Divider position (ratio between 0-1)
+  dividerPosition: number;
+  
+  // Pane states
+  paneStates: {
+    model: PaneState;
+    graph: PaneState;
+  };
+  
+  // Selected elements
+  selectedElements: Set<string>;
+  
+  // Highlighted elements with their styles
+  highlightedElements: Map<string, HighlightStyle>;
+  
+  // Hovered element for preview
+  hoveredElement: string | null;
+  
+  // Previous divider position for restore operations
+  previousDividerPosition: number;
+}
+
+export interface LayoutActions {
+  setDividerPosition: (position: number) => void;
+  maximizePane: (pane: PaneType) => void;
+  minimizePane: (pane: PaneType) => void;
+  restorePane: (pane: PaneType) => void;
+  resetLayout: () => void;
+  selectElement: (elementId: string, source: SelectionSource) => void;
+  highlightElements: (elementIds: string[], style: HighlightStyle) => void;
+  clearHighlights: () => void;
+  setHoveredElement: (elementId: string | null) => void;
+}
+
+export interface LayoutPreferences {
+  dividerPosition: number;
+  paneStates: {
+    model: PaneState;
+    graph: PaneState;
+  };
+  timestamp: number;
+}
