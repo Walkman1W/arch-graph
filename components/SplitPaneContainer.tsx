@@ -1,9 +1,12 @@
 import React, { useRef, useState, useCallback, useEffect } from 'react';
 import { useLayoutState } from '../contexts/LayoutStateProvider';
+import { PaneHeader } from './PaneHeader';
 
 interface SplitPaneContainerProps {
   topPane: React.ReactNode;
   bottomPane: React.ReactNode;
+  topPaneTitle?: string;
+  bottomPaneTitle?: string;
   defaultSplitRatio?: number;
   minPaneHeight?: number;
   maxPaneHeight?: number;
@@ -12,13 +15,22 @@ interface SplitPaneContainerProps {
 export const SplitPaneContainer: React.FC<SplitPaneContainerProps> = ({
   topPane,
   bottomPane,
+  topPaneTitle = '模型查看器',
+  bottomPaneTitle = '图谱查看器',
   defaultSplitRatio = 0.6,
   minPaneHeight = 0.2,
   maxPaneHeight = 0.8,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const { dividerPosition, setDividerPosition, paneStates } = useLayoutState();
+  const { 
+    dividerPosition, 
+    setDividerPosition, 
+    paneStates,
+    maximizePane,
+    minimizePane,
+    restorePane,
+  } = useLayoutState();
 
   // Handle mouse down on divider
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
@@ -95,6 +107,32 @@ export const SplitPaneContainer: React.FC<SplitPaneContainerProps> = ({
 
   const showDivider = paneStates.model === 'normal' && paneStates.graph === 'normal';
 
+  // Handlers for top pane (model)
+  const handleTopMaximize = useCallback(() => {
+    maximizePane('model');
+  }, [maximizePane]);
+
+  const handleTopMinimize = useCallback(() => {
+    minimizePane('model');
+  }, [minimizePane]);
+
+  const handleTopRestore = useCallback(() => {
+    restorePane('model');
+  }, [restorePane]);
+
+  // Handlers for bottom pane (graph)
+  const handleBottomMaximize = useCallback(() => {
+    maximizePane('graph');
+  }, [maximizePane]);
+
+  const handleBottomMinimize = useCallback(() => {
+    minimizePane('graph');
+  }, [minimizePane]);
+
+  const handleBottomRestore = useCallback(() => {
+    restorePane('graph');
+  }, [restorePane]);
+
   return (
     <div
       ref={containerRef}
@@ -102,13 +140,27 @@ export const SplitPaneContainer: React.FC<SplitPaneContainerProps> = ({
     >
       {/* Top Pane */}
       <div
-        className="relative overflow-hidden transition-all duration-200 ease-in-out"
+        className="relative overflow-hidden transition-all duration-300 ease-in-out flex flex-col"
         style={{
           height: getTopPaneHeight(),
-          display: paneStates.model === 'minimized' && paneStates.graph === 'maximized' ? 'none' : 'block',
         }}
       >
-        {topPane}
+        {/* Top Pane Header */}
+        <PaneHeader
+          title={topPaneTitle}
+          paneType="model"
+          paneState={paneStates.model}
+          onMaximize={handleTopMaximize}
+          onMinimize={handleTopMinimize}
+          onRestore={handleTopRestore}
+        />
+        
+        {/* Top Pane Content */}
+        {paneStates.model !== 'minimized' && (
+          <div className="flex-1 overflow-hidden">
+            {topPane}
+          </div>
+        )}
       </div>
 
       {/* Divider */}
@@ -130,13 +182,27 @@ export const SplitPaneContainer: React.FC<SplitPaneContainerProps> = ({
 
       {/* Bottom Pane */}
       <div
-        className="relative overflow-hidden transition-all duration-200 ease-in-out flex-1"
+        className="relative overflow-hidden transition-all duration-300 ease-in-out flex flex-col"
         style={{
-          height: showDivider ? getBottomPaneHeight() : '100%',
-          display: paneStates.graph === 'minimized' && paneStates.model === 'maximized' ? 'none' : 'block',
+          height: showDivider ? getBottomPaneHeight() : (paneStates.graph === 'maximized' ? '100%' : getBottomPaneHeight()),
         }}
       >
-        {bottomPane}
+        {/* Bottom Pane Header */}
+        <PaneHeader
+          title={bottomPaneTitle}
+          paneType="graph"
+          paneState={paneStates.graph}
+          onMaximize={handleBottomMaximize}
+          onMinimize={handleBottomMinimize}
+          onRestore={handleBottomRestore}
+        />
+        
+        {/* Bottom Pane Content */}
+        {paneStates.graph !== 'minimized' && (
+          <div className="flex-1 overflow-hidden">
+            {bottomPane}
+          </div>
+        )}
       </div>
     </div>
   );
