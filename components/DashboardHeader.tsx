@@ -11,9 +11,9 @@ const DashboardHeader: React.FC = () => {
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-lg shadow-lg">
-            A
+            i
           </div>
-          <h1 className="text-xl font-bold text-slate-800 tracking-tight">Arch<span className="text-blue-600">Graph</span></h1>
+          <h1 className="text-xl font-bold text-slate-800 tracking-tight">iMade-<span className="text-blue-600">Arch</span></h1>
         </div>
         <div className="w-px h-6 bg-slate-200"></div>
         <ProjectSelector />

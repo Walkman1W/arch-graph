@@ -155,12 +155,15 @@ export const SplitPaneContainer: React.FC<SplitPaneContainerProps> = ({
           onRestore={handleTopRestore}
         />
         
-        {/* Top Pane Content */}
-        {paneStates.model !== 'minimized' && (
-          <div className="flex-1 overflow-hidden">
-            {topPane}
-          </div>
-        )}
+        {/* Top Pane Content - use CSS visibility instead of conditional render to prevent iframe reload */}
+        <div 
+          className="flex-1 overflow-hidden"
+          style={{
+            display: paneStates.model === 'minimized' ? 'none' : 'block',
+          }}
+        >
+          {topPane}
+        </div>
       </div>
 
       {/* Divider */}
@@ -197,12 +200,15 @@ export const SplitPaneContainer: React.FC<SplitPaneContainerProps> = ({
           onRestore={handleBottomRestore}
         />
         
-        {/* Bottom Pane Content */}
-        {paneStates.graph !== 'minimized' && (
-          <div className="flex-1 overflow-hidden">
-            {bottomPane}
-          </div>
-        )}
+        {/* Bottom Pane Content - use CSS visibility instead of conditional render */}
+        <div 
+          className="flex-1 overflow-hidden"
+          style={{
+            display: paneStates.graph === 'minimized' ? 'none' : 'block',
+          }}
+        >
+          {bottomPane}
+        </div>
       </div>
     </div>
   );

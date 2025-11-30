@@ -89,19 +89,40 @@ const AppContent: React.FC = () => {
     let filtered = [...allElements];
 
     if (response.category) {
-      filtered = filtered.filter(e => e.category.toLowerCase().includes(response.category!.toLowerCase()));
+      filtered = filtered.filter((e: MockBIMElement) => e.category.toLowerCase().includes(response.category!.toLowerCase()));
     }
     
     if (response.level) {
-      filtered = filtered.filter(e => e.level.toLowerCase().includes(response.level!.toLowerCase()));
+      filtered = filtered.filter((e: MockBIMElement) => e.level.toLowerCase().includes(response.level!.toLowerCase()));
     }
 
     if (response.material) {
-      filtered = filtered.filter(e => e.material.toLowerCase().includes(response.material!.toLowerCase()));
+      filtered = filtered.filter((e: MockBIMElement) => e.material.toLowerCase().includes(response.material!.toLowerCase()));
     }
 
     setActiveElements(filtered);
   };
+
+  // Memoize the embed URL to prevent unnecessary re-renders
+  const embedUrl = currentProject?.embedUrl || '';
+
+  // Memoize the SpeckleViewer to prevent iframe reload
+  const memoizedSpeckleViewer = useMemo(() => (
+    <SpeckleViewer embedUrl={embedUrl} />
+  ), [embedUrl]);
+
+  // Memoize the scenario selector
+  const memoizedScenarioSelector = useMemo(() => (
+    <select
+      value={currentScenario}
+      onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleScenarioChange(e.target.value as ScenarioType)}
+      className="px-2 py-1 text-xs border border-slate-300 rounded bg-white/90 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+    >
+      {scenarios.map(s => (
+        <option key={s.id} value={s.id}>{s.name}</option>
+      ))}
+    </select>
+  ), [currentScenario, scenarios, handleScenarioChange]);
 
   return (
     <div className="flex flex-col h-screen bg-slate-50 overflow-hidden">
@@ -115,7 +136,7 @@ const AppContent: React.FC = () => {
             bottomPaneTitle={t('layout.graphViewer')}
             topPane={
               <div className="relative w-full h-full">
-                <SpeckleViewer embedUrl={currentProject?.embedUrl || ''} />
+                {memoizedSpeckleViewer}
                   
                   {/* Status Overlay (Top Left) */}
                   <div className="absolute top-4 left-4 z-20 flex flex-col gap-2 pointer-events-none">
@@ -146,19 +167,7 @@ const AppContent: React.FC = () => {
                 </div>
               }
               bottomPane={
-                <div className="w-full h-full relative">
-                  {/* Scenario selector */}
-                  <div className="absolute top-2 left-2 z-20">
-                    <select
-                      value={currentScenario}
-                      onChange={(e) => handleScenarioChange(e.target.value as ScenarioType)}
-                      className="px-2 py-1 text-xs border border-slate-300 rounded bg-white/90 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      {scenarios.map(s => (
-                        <option key={s.id} value={s.id}>{s.name}</option>
-                      ))}
-                    </select>
-                  </div>
+                <div className="w-full h-full relative overflow-hidden">
                   <GraphViewer
                     data={graphData}
                     selectedNodes={selectedGraphNodes}
@@ -171,6 +180,7 @@ const AppContent: React.FC = () => {
                     showZoomControls={true}
                     showLegend={true}
                     showLayoutControls={true}
+                    scenarioSelector={memoizedScenarioSelector}
                   />
                 </div>
               }

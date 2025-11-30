@@ -79,6 +79,8 @@ interface GraphViewerProps {
   showZoomControls?: boolean;
   showLegend?: boolean;
   showLayoutControls?: boolean;
+  // Custom scenario selector slot
+  scenarioSelector?: React.ReactNode;
 }
 
 const GraphViewer: React.FC<GraphViewerProps> = ({
@@ -97,6 +99,7 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
   showZoomControls = true,
   showLegend = true,
   showLayoutControls = true,
+  scenarioSelector,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const cyRef = useRef<Core | null>(null);
@@ -221,6 +224,7 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
 
   // Get layout configuration
   const getLayoutConfig = useCallback((mode: LayoutMode) => {
+    const basePadding = 80; // Consistent padding to prevent edge clipping
     switch (mode) {
       case 'hierarchy':
         return {
@@ -230,6 +234,8 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
           animate: true,
           animationDuration: 500,
           roots: '[type="Storey"]',
+          padding: basePadding,
+          fit: true,
         };
       case 'force':
         return {
@@ -241,6 +247,8 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
           edgeElasticity: () => 100,
           gravity: 0.25,
           numIter: 100,
+          padding: basePadding,
+          fit: true,
         };
       case 'concentric':
         return {
@@ -250,6 +258,8 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
           concentric: (node: any) => node.degree(),
           levelWidth: () => 2,
           spacingFactor: 1.5,
+          padding: basePadding,
+          fit: true,
         };
       case 'grid':
         return {
@@ -258,9 +268,11 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
           animationDuration: 500,
           spacingFactor: 1.2,
           rows: Math.ceil(Math.sqrt(graphNodes.length)),
+          padding: basePadding,
+          fit: true,
         };
       default:
-        return { name: 'cose', animate: true };
+        return { name: 'cose', animate: true, padding: basePadding, fit: true };
     }
   }, [graphNodes.length]);
 
@@ -272,7 +284,7 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
       container: containerRef.current,
       style: getCytoscapeStyles(),
       layout: { name: 'preset' }, // Start with preset, will run layout after adding elements
-      minZoom: 0.2,
+      minZoom: 0.15,
       maxZoom: 4,
       wheelSensitivity: 0.3,
       boxSelectionEnabled: false,
@@ -464,7 +476,7 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
   const handleFitToScreen = useCallback(() => {
     if (cyRef.current) {
       cyRef.current.animate({
-        fit: { padding: 50 },
+        fit: { padding: 80 },
         duration: 400,
       });
     }
@@ -541,9 +553,9 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
       {/* Cytoscape container */}
       <div ref={containerRef} className="w-full h-full" />
 
-      {/* Layout controls */}
+      {/* Layout controls - moved to top right */}
       {showLayoutControls && paneState !== 'minimized' && (
-        <div className="absolute top-4 right-4 bg-white/95 backdrop-blur-sm rounded-lg shadow-md border border-slate-200 z-10 p-2">
+        <div className="absolute top-14 right-4 bg-white/95 backdrop-blur-sm rounded-lg shadow-md border border-slate-200 z-10 p-2">
           <div className="text-xs text-slate-500 mb-2 font-medium">布局</div>
           <div className="flex flex-col gap-1">
             {(['hierarchy', 'force', 'concentric', 'grid'] as LayoutMode[]).map(mode => (
@@ -565,47 +577,47 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
         </div>
       )}
 
-      {/* Zoom controls */}
+      {/* Zoom controls - moved to bottom center */}
       {showZoomControls && paneState !== 'minimized' && (
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-white/95 backdrop-blur-sm rounded-lg shadow-md border border-slate-200 z-10 flex items-center gap-1 p-1">
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-white/95 backdrop-blur-sm rounded-lg shadow-md border border-slate-200 z-10 flex items-center gap-1 p-1">
           <button
             onClick={handleZoomOut}
-            className="w-8 h-8 flex items-center justify-center text-slate-600 hover:bg-slate-100 rounded transition-colors"
+            className="w-7 h-7 flex items-center justify-center text-slate-600 hover:bg-slate-100 rounded transition-colors"
             title="缩小"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
             </svg>
           </button>
-          <span className="text-xs text-slate-500 w-12 text-center">
+          <span className="text-xs text-slate-500 w-10 text-center">
             {Math.round(zoomLevel * 100)}%
           </span>
           <button
             onClick={handleZoomIn}
-            className="w-8 h-8 flex items-center justify-center text-slate-600 hover:bg-slate-100 rounded transition-colors"
+            className="w-7 h-7 flex items-center justify-center text-slate-600 hover:bg-slate-100 rounded transition-colors"
             title="放大"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
           </button>
-          <div className="w-px h-6 bg-slate-200 mx-1" />
+          <div className="w-px h-5 bg-slate-200 mx-0.5" />
           <button
             onClick={handleFitToScreen}
-            className="w-8 h-8 flex items-center justify-center text-slate-600 hover:bg-slate-100 rounded transition-colors"
+            className="w-7 h-7 flex items-center justify-center text-slate-600 hover:bg-slate-100 rounded transition-colors"
             title="适应屏幕"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
             </svg>
           </button>
           {selectedNodes.size > 0 && (
             <button
               onClick={handleCenterSelected}
-              className="w-8 h-8 flex items-center justify-center text-blue-600 hover:bg-blue-50 rounded transition-colors"
+              className="w-7 h-7 flex items-center justify-center text-blue-600 hover:bg-blue-50 rounded transition-colors"
               title="居中选中节点"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l-4 4m0 0l-4-4m4 4V3m0 18a9 9 0 110-18 9 9 0 010 18z" />
               </svg>
             </button>
@@ -614,60 +626,70 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
       )}
 
 
-      {/* Status badge */}
-      <div className="absolute top-4 left-4 bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-md border border-slate-200 z-10 flex items-center gap-2">
-        <div className={`w-2 h-2 rounded-full ${
-          selectedNodes.size > 0 ? 'bg-amber-500' : 'bg-green-500'
-        } animate-pulse`} />
-        <span className="text-xs font-medium text-slate-700">
-          {selectedNodes.size > 0 
-            ? `已选 ${selectedNodes.size} 个节点` 
-            : `${graphNodes.length} 节点 · ${graphEdges.length} 关系`}
-        </span>
+      {/* Status badge and scenario selector row */}
+      <div className="absolute top-4 left-4 right-4 z-10 flex items-center justify-between pointer-events-none">
+        {/* Left side: scenario selector + status */}
+        <div className="flex items-center gap-2 pointer-events-auto">
+          {/* Scenario selector slot */}
+          {scenarioSelector && (
+            <div className="flex-shrink-0">
+              {scenarioSelector}
+            </div>
+          )}
+          {/* Status badge */}
+          <div className="bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-md border border-slate-200 flex items-center gap-2">
+            <div className={`w-2 h-2 rounded-full ${
+              selectedNodes.size > 0 ? 'bg-amber-500' : 'bg-green-500'
+            } animate-pulse`} />
+            <span className="text-xs font-medium text-slate-700 whitespace-nowrap">
+              {selectedNodes.size > 0 
+                ? `已选 ${selectedNodes.size}` 
+                : `${graphNodes.length} 节点 · ${graphEdges.length} 关系`}
+            </span>
+          </div>
+        </div>
       </div>
 
-      {/* Selected node info */}
+      {/* Selected node info - moved to left side, below status */}
       {selectedNodes.size > 0 && paneState !== 'minimized' && (
-        <div className="absolute bottom-4 left-4 bg-white/95 backdrop-blur-sm px-3 py-2 rounded-lg shadow-md border border-slate-200 z-10 max-w-xs max-h-40 overflow-y-auto">
+        <div className="absolute top-14 left-4 bg-white/95 backdrop-blur-sm px-2 py-1.5 rounded-lg shadow-md border border-slate-200 z-10 max-w-[160px] max-h-32 overflow-y-auto">
           <div className="text-xs text-slate-500 mb-1 font-medium">选中节点</div>
-          <div className="space-y-1">
-            {Array.from(selectedNodes).slice(0, 5).map(id => {
-              const node = graphNodes.find(n => n.id === id);
+          <div className="space-y-0.5">
+            {Array.from(selectedNodes).slice(0, 4).map(id => {
+              const node = graphNodes.find((n: GraphNode) => n.id === id);
               return node ? (
-                <div key={id} className="flex items-center gap-2 text-xs">
+                <div key={id} className="flex items-center gap-1.5 text-xs">
                   <div
-                    className="w-3 h-3 rounded-full flex-shrink-0"
+                    className="w-2.5 h-2.5 rounded-full flex-shrink-0"
                     style={{ backgroundColor: getNodeTypeColor(node.type) }}
                   />
-                  <span className="font-medium text-slate-700 truncate">{node.label}</span>
-                  <span className="text-slate-400">{nodeTypeLabels[node.type]}</span>
+                  <span className="font-medium text-slate-700 truncate text-[11px]">{node.label}</span>
                 </div>
               ) : null;
             })}
-            {selectedNodes.size > 5 && (
-              <div className="text-xs text-slate-400">
-                还有 {selectedNodes.size - 5} 个...
+            {selectedNodes.size > 4 && (
+              <div className="text-[10px] text-slate-400">
+                +{selectedNodes.size - 4} 更多
               </div>
             )}
           </div>
         </div>
       )}
 
-      {/* Hover preview */}
+      {/* Hover preview - positioned below selected nodes or status */}
       {hoveredNode && !selectedNodes.has(hoveredNode) && paneState !== 'minimized' && (
-        <div className="absolute top-16 left-4 bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-lg shadow-md border border-slate-200 z-10">
-          <div className="flex items-center gap-2 text-xs">
+        <div className={`absolute ${selectedNodes.size > 0 ? 'top-48' : 'top-14'} left-4 bg-white/95 backdrop-blur-sm px-2 py-1 rounded-lg shadow-md border border-slate-200 z-10`}>
+          <div className="flex items-center gap-1.5 text-xs">
             {(() => {
-              const node = graphNodes.find(n => n.id === hoveredNode);
-              if (!node) return <span className="text-slate-500">{hoveredNode}</span>;
+              const node = graphNodes.find((n: GraphNode) => n.id === hoveredNode);
+              if (!node) return <span className="text-slate-500 text-[11px]">{hoveredNode}</span>;
               return (
                 <>
                   <div
-                    className="w-3 h-3 rounded-full"
+                    className="w-2.5 h-2.5 rounded-full"
                     style={{ backgroundColor: getNodeTypeColor(node.type) }}
                   />
-                  <span className="font-medium text-slate-700">{node.label}</span>
-                  <span className="text-slate-400">{nodeTypeLabels[node.type]}</span>
+                  <span className="font-medium text-slate-700 text-[11px]">{node.label}</span>
                 </>
               );
             })()}
@@ -675,19 +697,21 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
         </div>
       )}
 
-      {/* Legend */}
+      {/* Legend - compact version at bottom right */}
       {showLegend && paneState !== 'minimized' && (
-        <div className="absolute bottom-4 right-4 bg-white/95 backdrop-blur-sm rounded-lg shadow-md border border-slate-200 z-10 p-2 max-w-[180px]">
-          {/* Node types */}
-          <div className="text-xs text-slate-500 mb-1.5 font-medium">节点类型</div>
-          <div className="space-y-1 mb-3">
-            {presentNodeTypes.map(type => (
-              <div key={type} className="flex items-center gap-2">
+        <div className="absolute bottom-14 right-4 bg-white/95 backdrop-blur-sm rounded-lg shadow-md border border-slate-200 z-10 p-2 min-w-[120px]">
+          {/* Node types - filter out MEPElement (构件) */}
+          <div className="text-[10px] text-slate-500 mb-1.5 font-medium">节点</div>
+          <div className="grid grid-cols-3 gap-x-3 gap-y-1 mb-2">
+            {presentNodeTypes
+              .filter(type => type !== 'MEPElement')
+              .map(type => (
+              <div key={type} className="flex items-center gap-1">
                 <div
-                  className="w-3 h-3 rounded-full flex-shrink-0"
+                  className="w-2 h-2 rounded-full flex-shrink-0"
                   style={{ backgroundColor: getNodeTypeColor(type) }}
                 />
-                <span className="text-xs text-slate-600">{nodeTypeLabels[type]}</span>
+                <span className="text-[10px] text-slate-600 whitespace-nowrap">{nodeTypeLabels[type]}</span>
               </div>
             ))}
           </div>
@@ -695,23 +719,21 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
           {/* Edge types */}
           {presentEdgeTypes.length > 0 && (
             <>
-              <div className="text-xs text-slate-500 mb-1.5 font-medium">关系类型</div>
-              <div className="space-y-1">
-                {presentEdgeTypes.slice(0, 5).map(type => {
+              <div className="text-[10px] text-slate-500 mb-1.5 font-medium">关系</div>
+              <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+                {presentEdgeTypes.slice(0, 4).map(type => {
                   const info = getEdgeTypeInfo(type);
                   return (
-                    <div key={type} className="flex items-center gap-2">
+                    <div key={type} className="flex items-center gap-1">
                       <div 
-                        className="w-4 h-0.5 flex-shrink-0"
+                        className="w-3 flex-shrink-0"
                         style={{ 
+                          height: 2,
                           backgroundColor: info.lineColor,
                           borderStyle: info.lineStyle === 'dashed' ? 'dashed' : 'solid',
-                          borderWidth: info.lineStyle === 'dashed' ? '0 0 2px 0' : 0,
-                          borderColor: info.lineColor,
-                          height: info.lineStyle === 'dashed' ? 0 : 2,
                         }}
                       />
-                      <span className="text-xs text-slate-600 truncate">{edgeTypeLabels[type]}</span>
+                      <span className="text-[10px] text-slate-600 whitespace-nowrap">{edgeTypeLabels[type]}</span>
                     </div>
                   );
                 })}
