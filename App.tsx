@@ -3,6 +3,8 @@ import DashboardHeader from './components/DashboardHeader';
 import SpeckleViewer from './components/SpeckleViewer';
 import ControlPanel from './components/ControlPanel';
 import { LayoutStateProvider } from './contexts/LayoutStateProvider';
+import { I18nProvider, useI18n } from './contexts/I18nContext';
+import { ProjectProvider, useProject } from './contexts/ProjectContext';
 import { SplitPaneContainer } from './components/SplitPaneContainer';
 import { BIMQueryResponse, BIMOperation, MockBIMElement } from './types';
 
@@ -21,7 +23,9 @@ const generateMockElements = (count: number): MockBIMElement[] => {
   }));
 };
 
-const App: React.FC = () => {
+const AppContent: React.FC = () => {
+  const { currentProject } = useProject();
+  const { t } = useI18n();
   const [allElements] = useState<MockBIMElement[]>(generateMockElements(500));
   const [activeElements, setActiveElements] = useState<MockBIMElement[]>([]);
   const [currentFilter, setCurrentFilter] = useState<BIMQueryResponse | null>(null);
@@ -56,27 +60,26 @@ const App: React.FC = () => {
   };
 
   return (
-    <LayoutStateProvider>
-      <div className="flex flex-col h-screen bg-slate-50 overflow-hidden">
-        <DashboardHeader />
-        
-        <main className="flex-1 flex overflow-hidden">
-          {/* Left Side: Split Pane Container (70-75% width) */}
-          <div className="flex-[0.7] lg:flex-[0.75] min-w-0">
-            <SplitPaneContainer
-              topPaneTitle="3D 模型查看器"
-              bottomPaneTitle="图谱可视化"
-              topPane={
-                <div className="relative w-full h-full">
-                  <SpeckleViewer embedUrl="https://app.speckle.systems/projects/0876633ea1/models/1e05934141?embedToken=3d3c2e0ab4878e7d01b16a1608e78e03848887eed4#embed=%7B%22isEnabled%22%3Atrue%7D" />
+    <div className="flex flex-col h-screen bg-slate-50 overflow-hidden">
+      <DashboardHeader />
+      
+      <main className="flex-1 flex overflow-hidden">
+        {/* Left Side: Split Pane Container (70-75% width) */}
+        <div className="flex-[0.7] lg:flex-[0.75] min-w-0">
+          <SplitPaneContainer
+            topPaneTitle={t('layout.modelViewer')}
+            bottomPaneTitle={t('layout.graphViewer')}
+            topPane={
+              <div className="relative w-full h-full">
+                <SpeckleViewer embedUrl={currentProject?.embedUrl || ''} />
                   
                   {/* Status Overlay (Top Left) */}
                   <div className="absolute top-4 left-4 z-20 flex flex-col gap-2 pointer-events-none">
                     <div className="bg-white/90 backdrop-blur shadow-sm border border-slate-200 rounded-lg px-4 py-2 flex items-center gap-3 pointer-events-auto">
                       <div className={`w-2 h-2 rounded-full ${activeElements.length < allElements.length ? 'bg-blue-500' : 'bg-slate-300'}`}></div>
                       <div>
-                        <p className="text-xs text-slate-500 uppercase font-bold tracking-wider">Visibility</p>
-                        <p className="text-sm font-semibold text-slate-800">{activeElements.length} / {allElements.length} Elements</p>
+                        <p className="text-xs text-slate-500 uppercase font-bold tracking-wider">{t('layout.visibility')}</p>
+                        <p className="text-sm font-semibold text-slate-800">{activeElements.length} / {allElements.length} {t('layout.elements')}</p>
                       </div>
                     </div>
                   </div>
@@ -86,7 +89,7 @@ const App: React.FC = () => {
                     <div className="absolute bottom-4 left-4 z-20 flex flex-wrap gap-2 max-w-md pointer-events-none">
                       {currentFilter.operation && (
                         <span className="px-3 py-1 bg-slate-900 text-white text-xs font-mono rounded-md shadow-lg">
-                          CMD: {currentFilter.operation}
+                          {t('layout.command')}: {currentFilter.operation}
                         </span>
                       )}
                       {currentFilter.category && (
@@ -102,8 +105,8 @@ const App: React.FC = () => {
                 <div className="w-full h-full bg-gradient-to-br from-green-50 to-green-100 flex items-center justify-center">
                   <div className="text-center">
                     <div className="text-6xl mb-4">🕸️</div>
-                    <h2 className="text-2xl font-bold text-slate-700 mb-2">图谱可视化</h2>
-                    <p className="text-slate-600">Cytoscape.js 图谱将在任务 6 中实现</p>
+                    <h2 className="text-2xl font-bold text-slate-700 mb-2">{t('layout.graphViewer')}</h2>
+                    <p className="text-slate-600">{t('graph.placeholder')}</p>
                   </div>
                 </div>
               }
@@ -119,7 +122,18 @@ const App: React.FC = () => {
           </div>
         </main>
       </div>
-    </LayoutStateProvider>
+  );
+};
+
+const App: React.FC = () => {
+  return (
+    <I18nProvider>
+      <ProjectProvider>
+        <LayoutStateProvider>
+          <AppContent />
+        </LayoutStateProvider>
+      </ProjectProvider>
+    </I18nProvider>
   );
 };
 

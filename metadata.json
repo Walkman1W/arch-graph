@@ -1,6 +1,6 @@
 {
-  "name": "Copy of Smart BIM Commander",
-  "description": "A lightweight BIM visualization platform integrated with AI for natural language searching, filtering, and analysis of architectural models using Speckle and Gemini.",
+  "name": "Arch-Graph",
+  "description": "Next-generation BIM platform that transforms complex 3D architectural models into interactive conversational knowledge graph systems with AI-powered natural language queries.",
   "requestFramePermissions": [
     "microphone",
     "camera"
