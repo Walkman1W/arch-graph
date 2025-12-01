@@ -13,7 +13,7 @@ import {
 export type { GraphNode, GraphEdge, GraphData };
 
 // Layout types
-export type LayoutMode = 'hierarchy' | 'force' | 'concentric' | 'grid';
+export type LayoutMode = 'hierarchy' | 'force' | 'concentric' | 'grid' | 'building';
 
 // Style configuration
 export interface NodeStyle {
@@ -274,6 +274,58 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
           padding: basePadding,
           fit: true,
           boundingBox: undefined,
+        };
+      case 'building':
+        // 楼层视图：按楼层从下到上排列，像真实建筑
+        return {
+          name: 'preset',
+          animate: true,
+          animationDuration: 500,
+          padding: basePadding,
+          fit: true,
+          positions: (node: any) => {
+            const nodeData = node.data();
+            const levelCode = nodeData.levelCode || '';
+            const nodeType = nodeData.type;
+            const nodeId = node.id();
+            
+            // 提取楼层数字
+            const floorMatch = levelCode.match(/(\d+)F/);
+            const floor = floorMatch ? parseInt(floorMatch[1], 10) : 0;
+            
+            // Y坐标：楼层越高，Y值越小（屏幕上方）
+            // 每层间隔 120px
+            const floorHeight = 120;
+            const maxFloor = 25; // 假设最高25层
+            const baseY = (maxFloor - floor) * floorHeight;
+            
+            // X坐标：根据节点类型和索引分布
+            let baseX = 0;
+            
+            if (nodeType === 'Storey') {
+              // 楼层节点放在最左边
+              baseX = 0;
+            } else if (nodeType === 'MEPSystem') {
+              // 系统节点放在最右边
+              baseX = 800;
+            } else if (nodeType === 'MEPElement') {
+              // MEP元素放在右侧
+              const mepIndex = parseInt(nodeId.split('-').pop() || '0', 10);
+              baseX = 600 + (mepIndex % 3) * 80;
+            } else if (nodeType === 'Space') {
+              // 空间节点按索引水平排列
+              const spaceIndex = parseInt(nodeId.split('-').pop() || '0', 10);
+              baseX = 100 + spaceIndex * 70;
+            } else {
+              baseX = 400;
+            }
+            
+            // 添加一些随机偏移避免完全重叠
+            const jitterX = (Math.random() - 0.5) * 20;
+            const jitterY = (Math.random() - 0.5) * 15;
+            
+            return { x: baseX + jitterX, y: baseY + jitterY };
+          },
         };
       default:
         return { name: 'cose', animate: true, padding: basePadding, fit: true };
@@ -562,7 +614,7 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
         <div className="absolute top-14 right-4 bg-white/95 backdrop-blur-sm rounded-lg shadow-md border border-slate-200 z-10 p-2">
           <div className="text-xs text-slate-500 mb-2 font-medium">布局</div>
           <div className="flex flex-col gap-1">
-            {(['hierarchy', 'force', 'concentric', 'grid'] as LayoutMode[]).map(mode => (
+            {(['building', 'hierarchy', 'force', 'concentric', 'grid'] as LayoutMode[]).map(mode => (
               <button
                 key={mode}
                 onClick={() => changeLayout(mode)}
@@ -572,7 +624,8 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
                     : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                 }`}
               >
-                {mode === 'hierarchy' ? '层次' : 
+                {mode === 'building' ? '楼层' :
+                 mode === 'hierarchy' ? '层次' : 
                  mode === 'force' ? '力导向' : 
                  mode === 'concentric' ? '同心圆' : '网格'}
               </button>

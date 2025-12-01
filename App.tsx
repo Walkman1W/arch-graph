@@ -38,7 +38,7 @@ const AppContent: React.FC = () => {
   const [currentFilter, setCurrentFilter] = useState<BIMQueryResponse | null>(null);
   
   // Graph state
-  const [currentScenario, setCurrentScenario] = useState<ScenarioType>('simple-building');
+  const [currentScenario, setCurrentScenario] = useState<ScenarioType>('office-tower-22f');
   const [selectedGraphNodes, setSelectedGraphNodes] = useState<Set<string>>(new Set());
   const [highlightedGraphNodes, setHighlightedGraphNodes] = useState<Map<string, HighlightStyle>>(new Map());
   const [hoveredGraphNode, setHoveredGraphNode] = useState<string | null>(null);

@@ -68,7 +68,8 @@ export type ScenarioType =
   | 'simple-building'
   | 'mep-system'
   | 'path-finding'
-  | 'full-building';
+  | 'full-building'
+  | 'office-tower-22f';
 
 // ============================================================================
 // Utility Functions
@@ -662,6 +663,379 @@ export function generateFullBuilding(): GraphData {
 
 
 // ============================================================================
+// 22-Floor Office Tower Generator
+// ============================================================================
+
+/**
+ * 22层综合办公楼空间类型配置
+ */
+const OFFICE_TOWER_CONFIG = {
+  // 裙楼 (1-3层): 商业、大堂、配套
+  podium: {
+    floors: [1, 2, 3],
+    spaceTypes: ['大堂', '商业', '餐厅', '会议中心', '物业办公']
+  },
+  // 标准层 (4-20层): 办公
+  typical: {
+    floors: Array.from({ length: 17 }, (_, i) => i + 4),
+    spaceTypes: ['开放办公', '经理室', '会议室', '茶水间', '卫生间', '电梯厅']
+  },
+  // 顶层 (21-22层): 高管层、设备层
+  top: {
+    floors: [21, 22],
+    spaceTypes: ['总裁办公室', '董事会议室', '行政办公', '设备机房', '屋顶花园']
+  }
+};
+
+/**
+ * Generate a 22-floor office tower scenario
+ * 模拟22层综合办公楼的图数据
+ */
+export function generateOfficeTower22F(): GraphData {
+  const nodes: GraphNode[] = [];
+  const edges: GraphEdge[] = [];
+  const totalFloors = 22;
+  
+  // ========== 1. 生成机电系统节点 ==========
+  const systems: GraphNode[] = [
+    // 空调系统
+    { id: 'sys-hvac-main', type: 'MEPSystem', label: '中央空调系统', 
+      properties: { systemCode: 'HVAC-001', category: 'hvac', tags: ['空调', '制冷'] } },
+    { id: 'sys-hvac-fresh', type: 'MEPSystem', label: '新风系统', 
+      properties: { systemCode: 'HVAC-002', category: 'hvac', tags: ['新风', '通风'] } },
+    { id: 'sys-hvac-exhaust', type: 'MEPSystem', label: '排烟系统', 
+      properties: { systemCode: 'HVAC-003', category: 'hvac', tags: ['排烟', '消防'] } },
+    // 给排水系统
+    { id: 'sys-plumb-supply', type: 'MEPSystem', label: '给水系统', 
+      properties: { systemCode: 'PLUMB-001', category: 'plumbing', tags: ['给水'] } },
+    { id: 'sys-plumb-drain', type: 'MEPSystem', label: '排水系统', 
+      properties: { systemCode: 'PLUMB-002', category: 'plumbing', tags: ['排水'] } },
+    { id: 'sys-plumb-fire', type: 'MEPSystem', label: '消防喷淋系统', 
+      properties: { systemCode: 'PLUMB-003', category: 'plumbing', tags: ['消防', '喷淋'] } },
+    // 电气系统
+    { id: 'sys-elec-power', type: 'MEPSystem', label: '动力配电系统', 
+      properties: { systemCode: 'ELEC-001', category: 'electrical', tags: ['动力', '配电'] } },
+    { id: 'sys-elec-light', type: 'MEPSystem', label: '照明系统', 
+      properties: { systemCode: 'ELEC-002', category: 'electrical', tags: ['照明'] } },
+    { id: 'sys-elec-weak', type: 'MEPSystem', label: '弱电系统', 
+      properties: { systemCode: 'ELEC-003', category: 'electrical', tags: ['弱电', '网络'] } },
+  ];
+  nodes.push(...systems);
+  
+  // ========== 2. 生成楼层和空间 ==========
+  for (let f = 1; f <= totalFloors; f++) {
+    // 楼层节点
+    const storeyNode: GraphNode = {
+      id: `storey-${f}`,
+      type: 'Storey',
+      label: `${f}层`,
+      properties: {
+        globalId: generateGlobalId(),
+        levelCode: `${f}F`,
+        category: 'Storey',
+        tags: getFloorTags(f)
+      }
+    };
+    nodes.push(storeyNode);
+    
+    // 根据楼层类型生成空间
+    const floorSpaces = generateFloorSpaces(f);
+    const floorSpaceNodes: GraphNode[] = [];
+    
+    floorSpaces.forEach((spaceName, idx) => {
+      const spaceNode: GraphNode = {
+        id: `space-${f}-${idx}`,
+        type: 'Space',
+        label: `${spaceName}`,
+        properties: {
+          globalId: generateGlobalId(),
+          levelCode: `${f}F`,
+          category: getSpaceCategory(spaceName),
+          tags: [spaceName, `${f}F`],
+          bbox: generateBoundingBox(f - 1, idx, 4.2)
+        }
+      };
+      nodes.push(spaceNode);
+      floorSpaceNodes.push(spaceNode);
+      
+      // ON_LEVEL 关系
+      edges.push({
+        id: `edge-onlevel-${spaceNode.id}`,
+        source: spaceNode.id,
+        target: storeyNode.id,
+        type: 'ON_LEVEL'
+      });
+    });
+    
+    // 生成同层空间的连通关系
+    generateFloorConnectivity(floorSpaceNodes, edges);
+    
+    // 每隔5层生成一些机电元素
+    if (f % 5 === 0 || f === 1 || f === 22) {
+      generateFloorMEP(f, floorSpaceNodes, systems, nodes, edges);
+    }
+  }
+  
+  // ========== 3. 生成垂直交通连接 ==========
+  generateVerticalConnections(nodes, edges, totalFloors);
+  
+  const relationshipTypes = [...new Set(edges.map(e => e.type))];
+  
+  return {
+    nodes,
+    edges,
+    metadata: {
+      scenario: 'office-tower-22f',
+      nodeCount: nodes.length,
+      edgeCount: edges.length,
+      relationshipTypes
+    }
+  };
+}
+
+/**
+ * 获取楼层标签
+ */
+function getFloorTags(floor: number): string[] {
+  if (floor <= 3) return ['裙楼', '商业'];
+  if (floor <= 20) return ['标准层', '办公'];
+  return ['顶层', '高管'];
+}
+
+/**
+ * 根据楼层生成空间列表
+ */
+function generateFloorSpaces(floor: number): string[] {
+  // 裙楼
+  if (floor === 1) {
+    return ['主入口大堂', '电梯厅', '消防控制室', '物业办公室', '商业A区', '商业B区', '卫生间'];
+  }
+  if (floor === 2) {
+    return ['商业C区', '商业D区', '餐厅A', '餐厅B', '电梯厅', '卫生间', '后勤通道'];
+  }
+  if (floor === 3) {
+    return ['会议中心A', '会议中心B', '贵宾接待', '电梯厅', '茶水间', '卫生间', '设备间'];
+  }
+  
+  // 标准办公层 (4-20层)
+  if (floor >= 4 && floor <= 20) {
+    return [
+      `开放办公区A`, 
+      `开放办公区B`, 
+      `会议室${floor}01`, 
+      `会议室${floor}02`, 
+      `经理室${floor}01`,
+      '电梯厅', 
+      '茶水间', 
+      '卫生间M', 
+      '卫生间F',
+      '弱电间'
+    ];
+  }
+  
+  // 顶层 (21-22层)
+  if (floor === 21) {
+    return ['行政办公区', '总裁办公室', '副总裁办公室', '董事会议室', '贵宾接待室', '电梯厅', '茶水间', '卫生间'];
+  }
+  if (floor === 22) {
+    return ['空调机房', '电梯机房', '消防水箱间', '弱电机房', '屋顶花园', '设备平台'];
+  }
+  
+  return ['空间'];
+}
+
+/**
+ * 获取空间类别
+ */
+function getSpaceCategory(spaceName: string): string {
+  if (spaceName.includes('办公')) return 'office';
+  if (spaceName.includes('会议')) return 'meeting';
+  if (spaceName.includes('大堂') || spaceName.includes('电梯厅')) return 'public';
+  if (spaceName.includes('卫生间')) return 'service';
+  if (spaceName.includes('茶水')) return 'service';
+  if (spaceName.includes('商业') || spaceName.includes('餐厅')) return 'commercial';
+  if (spaceName.includes('机房') || spaceName.includes('设备') || spaceName.includes('弱电')) return 'utility';
+  if (spaceName.includes('消防')) return 'utility';
+  return 'other';
+}
+
+/**
+ * 生成同层空间连通关系
+ */
+function generateFloorConnectivity(spaces: GraphNode[], edges: GraphEdge[]): void {
+  // 找到电梯厅作为核心连接点
+  const lobby = spaces.find(s => s.label.includes('电梯厅'));
+  
+  if (lobby) {
+    // 电梯厅连接到所有其他空间
+    spaces.forEach(space => {
+      if (space.id !== lobby.id) {
+        // CONNECTS_TO 关系
+        edges.push({
+          id: `edge-connects-${lobby.id}-${space.id}`,
+          source: lobby.id,
+          target: space.id,
+          type: 'CONNECTS_TO',
+          properties: { via: '走廊' }
+        });
+      }
+    });
+  }
+  
+  // 相邻空间的 ADJACENT_TO 关系
+  for (let i = 0; i < spaces.length - 1; i++) {
+    edges.push({
+      id: `edge-adjacent-${spaces[i].id}-${spaces[i + 1].id}`,
+      source: spaces[i].id,
+      target: spaces[i + 1].id,
+      type: 'ADJACENT_TO'
+    });
+  }
+}
+
+/**
+ * 生成楼层机电元素
+ */
+function generateFloorMEP(
+  floor: number, 
+  spaces: GraphNode[], 
+  systems: GraphNode[], 
+  nodes: GraphNode[], 
+  edges: GraphEdge[]
+): void {
+  // 风管
+  const duct: GraphNode = {
+    id: `mep-duct-${floor}`,
+    type: 'MEPElement',
+    label: `送风管-${floor}F`,
+    properties: {
+      globalId: generateGlobalId(),
+      levelCode: `${floor}F`,
+      category: 'duct',
+      tags: ['风管', '空调']
+    }
+  };
+  nodes.push(duct);
+  
+  // 归属空调系统
+  edges.push({
+    id: `edge-belongs-${duct.id}`,
+    source: duct.id,
+    target: 'sys-hvac-main',
+    type: 'BELONGS_TO_SYSTEM'
+  });
+  
+  // 穿越走廊和公共区域
+  spaces
+    .filter(s => ['public', 'office'].includes(s.properties.category || ''))
+    .slice(0, 3)
+    .forEach(space => {
+      edges.push({
+        id: `edge-crosses-${duct.id}-${space.id}`,
+        source: duct.id,
+        target: space.id,
+        type: 'CROSSES'
+      });
+    });
+  
+  // 给水管
+  const pipe: GraphNode = {
+    id: `mep-pipe-${floor}`,
+    type: 'MEPElement',
+    label: `给水管-${floor}F`,
+    properties: {
+      globalId: generateGlobalId(),
+      levelCode: `${floor}F`,
+      category: 'pipe',
+      tags: ['管道', '给水']
+    }
+  };
+  nodes.push(pipe);
+  
+  edges.push({
+    id: `edge-belongs-${pipe.id}`,
+    source: pipe.id,
+    target: 'sys-plumb-supply',
+    type: 'BELONGS_TO_SYSTEM'
+  });
+  
+  // 服务卫生间
+  spaces
+    .filter(s => s.properties.category === 'service')
+    .forEach(space => {
+      edges.push({
+        id: `edge-serves-${pipe.id}-${space.id}`,
+        source: pipe.id,
+        target: space.id,
+        type: 'SERVES'
+      });
+    });
+  
+  // 电缆桥架
+  const cable: GraphNode = {
+    id: `mep-cable-${floor}`,
+    type: 'MEPElement',
+    label: `电缆桥架-${floor}F`,
+    properties: {
+      globalId: generateGlobalId(),
+      levelCode: `${floor}F`,
+      category: 'cable',
+      tags: ['电缆', '桥架']
+    }
+  };
+  nodes.push(cable);
+  
+  edges.push({
+    id: `edge-belongs-${cable.id}`,
+    source: cable.id,
+    target: 'sys-elec-power',
+    type: 'BELONGS_TO_SYSTEM'
+  });
+  
+  // 穿越办公区
+  spaces
+    .filter(s => s.properties.category === 'office')
+    .forEach(space => {
+      edges.push({
+        id: `edge-crosses-${cable.id}-${space.id}`,
+        source: cable.id,
+        target: space.id,
+        type: 'CROSSES'
+      });
+    });
+}
+
+/**
+ * 生成垂直交通连接
+ */
+function generateVerticalConnections(nodes: GraphNode[], edges: GraphEdge[], totalFloors: number): void {
+  // 连接相邻楼层的电梯厅
+  for (let f = 1; f < totalFloors; f++) {
+    const lowerLobby = nodes.find(
+      n => n.type === 'Space' && 
+      n.properties.levelCode === `${f}F` && 
+      n.label.includes('电梯厅')
+    );
+    const upperLobby = nodes.find(
+      n => n.type === 'Space' && 
+      n.properties.levelCode === `${f + 1}F` && 
+      n.label.includes('电梯厅')
+    );
+    
+    if (lowerLobby && upperLobby) {
+      edges.push({
+        id: `edge-vertical-${f}-${f + 1}`,
+        source: lowerLobby.id,
+        target: upperLobby.id,
+        type: 'CONNECTS_TO',
+        properties: { via: '电梯' }
+      });
+    }
+  }
+}
+
+
+// ============================================================================
 // Data Validation
 // ============================================================================
 
@@ -763,6 +1137,8 @@ export function generateScenario(scenario: ScenarioType): GraphData {
       return generatePathFinding();
     case 'full-building':
       return generateFullBuilding();
+    case 'office-tower-22f':
+      return generateOfficeTower22F();
     default:
       throw new Error(`Unknown scenario: ${scenario}`);
   }
@@ -773,6 +1149,11 @@ export function generateScenario(scenario: ScenarioType): GraphData {
  */
 export function getAvailableScenarios(): { id: ScenarioType; name: string; description: string }[] {
   return [
+    {
+      id: 'office-tower-22f',
+      name: '22层办公楼',
+      description: '22层综合办公楼，包含完整空间和机电系统'
+    },
     {
       id: 'simple-building',
       name: '简单建筑',
