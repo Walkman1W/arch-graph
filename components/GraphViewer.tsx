@@ -224,7 +224,7 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
 
   // Get layout configuration
   const getLayoutConfig = useCallback((mode: LayoutMode) => {
-    const basePadding = 80; // Consistent padding to prevent edge clipping
+    const basePadding = 120; // Larger padding to prevent edge clipping at 100% zoom
     switch (mode) {
       case 'hierarchy':
         return {
@@ -236,6 +236,7 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
           roots: '[type="Storey"]',
           padding: basePadding,
           fit: true,
+          boundingBox: undefined,
         };
       case 'force':
         return {
@@ -249,6 +250,7 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
           numIter: 100,
           padding: basePadding,
           fit: true,
+          boundingBox: undefined,
         };
       case 'concentric':
         return {
@@ -260,6 +262,7 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
           spacingFactor: 1.5,
           padding: basePadding,
           fit: true,
+          boundingBox: undefined,
         };
       case 'grid':
         return {
@@ -270,6 +273,7 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
           rows: Math.ceil(Math.sqrt(graphNodes.length)),
           padding: basePadding,
           fit: true,
+          boundingBox: undefined,
         };
       default:
         return { name: 'cose', animate: true, padding: basePadding, fit: true };
@@ -442,7 +446,7 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
       cy.animate({
         fit: {
           eles: selectedElements,
-          padding: 80,
+          padding: 120,
         },
         duration: 400,
         easing: 'ease-out',
@@ -476,7 +480,7 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
   const handleFitToScreen = useCallback(() => {
     if (cyRef.current) {
       cyRef.current.animate({
-        fit: { padding: 80 },
+        fit: { padding: 120 },
         duration: 400,
       });
     }

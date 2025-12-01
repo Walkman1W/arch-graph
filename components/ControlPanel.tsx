@@ -164,11 +164,6 @@ const ControlPanel: React.FC<ControlPanelProps> = ({ onCommandProcessed, filtere
       <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
         <div>
           <h2 className="font-bold text-slate-800">{t('control.title')}</h2>
-          <p className="text-xs text-slate-500">{t('control.poweredBy')}</p>
-        </div>
-        <div className="flex items-center gap-2 bg-blue-50 px-3 py-1 rounded-full border border-blue-100">
-          <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
-          <span className="text-xs font-bold text-blue-700">{filteredCount} {t('control.elements')}</span>
         </div>
       </div>
 
