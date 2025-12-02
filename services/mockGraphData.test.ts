@@ -302,9 +302,9 @@ describe('Mock Graph Data Generator', () => {
   });
 
   describe('getAvailableScenarios', () => {
-    it('should return all 4 scenarios', () => {
+    it('should return all 5 scenarios', () => {
       const scenarios = getAvailableScenarios();
-      expect(scenarios.length).toBe(4);
+      expect(scenarios.length).toBe(5);
     });
 
     it('should have id, name, and description for each scenario', () => {

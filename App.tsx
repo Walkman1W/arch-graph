@@ -12,8 +12,12 @@ import {
   generateScenario, 
   getAvailableScenarios, 
   ScenarioType,
-  GraphNode 
+  GraphNode,
+  filterByFloor,
+  getNodesByType,
+  GraphData
 } from './services/mockGraphData';
+import NodeDetailPanel from './components/NodeDetailPanel';
 
 // Mock data generator for simulation
 const generateMockElements = (count: number): MockBIMElement[] => {
@@ -42,11 +46,34 @@ const AppContent: React.FC = () => {
   const [selectedGraphNodes, setSelectedGraphNodes] = useState<Set<string>>(new Set());
   const [highlightedGraphNodes, setHighlightedGraphNodes] = useState<Map<string, HighlightStyle>>(new Map());
   const [hoveredGraphNode, setHoveredGraphNode] = useState<string | null>(null);
+  const [selectedFloor, setSelectedFloor] = useState<string>('all');
+  const [detailNode, setDetailNode] = useState<GraphNode | null>(null);
 
-  // Generate graph data
-  const graphData = useMemo(() => {
+  // Generate base graph data
+  const baseGraphData = useMemo(() => {
     return generateScenario(currentScenario);
   }, [currentScenario]);
+
+  // Get available floors from the data
+  const availableFloors = useMemo(() => {
+    const storeyNodes = getNodesByType(baseGraphData, 'Storey');
+    return storeyNodes
+      .map(node => node.properties.levelCode || '')
+      .filter(code => code)
+      .sort((a, b) => {
+        const numA = parseInt(a.replace('F', ''), 10);
+        const numB = parseInt(b.replace('F', ''), 10);
+        return numA - numB;
+      });
+  }, [baseGraphData]);
+
+  // Apply floor filter
+  const graphData = useMemo(() => {
+    if (selectedFloor === 'all') {
+      return baseGraphData;
+    }
+    return filterByFloor(baseGraphData, selectedFloor);
+  }, [baseGraphData, selectedFloor]);
 
   const scenarios = getAvailableScenarios();
 
@@ -66,7 +93,43 @@ const AppContent: React.FC = () => {
       }
       return newSet;
     });
+    // Show node detail panel
+    setDetailNode(node);
   }, []);
+
+  const handleCloseDetail = useCallback(() => {
+    setDetailNode(null);
+  }, []);
+
+  const handleExpandNeighbors = useCallback((nodeId: string) => {
+    // Find neighbors and add them to selection
+    const node = graphData.nodes.find(n => n.id === nodeId);
+    if (node) {
+      const neighborIds = new Set<string>();
+      graphData.edges.forEach(edge => {
+        if (edge.source === nodeId) neighborIds.add(edge.target);
+        if (edge.target === nodeId) neighborIds.add(edge.source);
+      });
+      setSelectedGraphNodes(prev => {
+        const newSet = new Set(prev);
+        neighborIds.forEach(id => newSet.add(id));
+        return newSet;
+      });
+    }
+  }, [graphData]);
+
+  const handleLocateInModel = useCallback((nodeId: string) => {
+    // TODO: Implement model location when Speckle integration is ready
+    console.log('Locate in model:', nodeId);
+  }, []);
+
+  const handleNodeSelectFromDetail = useCallback((nodeId: string) => {
+    const node = graphData.nodes.find(n => n.id === nodeId);
+    if (node) {
+      setDetailNode(node);
+      setSelectedGraphNodes(new Set([nodeId]));
+    }
+  }, [graphData]);
 
   const handleGraphNodeHover = useCallback((nodeId: string | null) => {
     setHoveredGraphNode(nodeId);
@@ -76,6 +139,12 @@ const AppContent: React.FC = () => {
     setCurrentScenario(scenario);
     setSelectedGraphNodes(new Set());
     setHighlightedGraphNodes(new Map());
+    setSelectedFloor('all'); // Reset floor filter when changing scenario
+  }, []);
+
+  const handleFloorChange = useCallback((floor: string) => {
+    setSelectedFloor(floor);
+    setSelectedGraphNodes(new Set());
   }, []);
 
   const handleCommand = (response: BIMQueryResponse) => {
@@ -111,18 +180,32 @@ const AppContent: React.FC = () => {
     <SpeckleViewer embedUrl={embedUrl} />
   ), [embedUrl]);
 
-  // Memoize the scenario selector
+  // Memoize the scenario and floor selectors
   const memoizedScenarioSelector = useMemo(() => (
-    <select
-      value={currentScenario}
-      onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleScenarioChange(e.target.value as ScenarioType)}
-      className="px-2 py-1 text-xs border border-slate-300 rounded bg-white/90 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-    >
-      {scenarios.map(s => (
-        <option key={s.id} value={s.id}>{s.name}</option>
-      ))}
-    </select>
-  ), [currentScenario, scenarios, handleScenarioChange]);
+    <div className="flex items-center gap-2">
+      <select
+        value={currentScenario}
+        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleScenarioChange(e.target.value as ScenarioType)}
+        className="px-2 py-1 text-xs border border-slate-300 rounded bg-white/90 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+      >
+        {scenarios.map(s => (
+          <option key={s.id} value={s.id}>{s.name}</option>
+        ))}
+      </select>
+      {availableFloors.length > 0 && (
+        <select
+          value={selectedFloor}
+          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleFloorChange(e.target.value)}
+          className="px-2 py-1 text-xs border border-slate-300 rounded bg-white/90 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="all">全部楼层</option>
+          {availableFloors.map(floor => (
+            <option key={floor} value={floor}>{floor}</option>
+          ))}
+        </select>
+      )}
+    </div>
+  ), [currentScenario, scenarios, handleScenarioChange, selectedFloor, availableFloors, handleFloorChange]);
 
   return (
     <div className="flex flex-col h-screen bg-slate-50 overflow-hidden">
@@ -161,11 +244,27 @@ const AppContent: React.FC = () => {
           </div>
 
           {/* Right Side: Control Panel (25-30% width) */}
-          <div className="flex-[0.3] lg:flex-[0.25] min-w-0">
-            <ControlPanel 
-              onCommandProcessed={handleCommand}
-              filteredCount={activeElements.length}
-            />
+          <div className="flex-[0.3] lg:flex-[0.25] min-w-0 flex flex-col">
+            {/* Node Detail Panel - shows when a node is selected */}
+            {detailNode && (
+              <div className="h-[45%] border-b border-slate-200 overflow-hidden">
+                <NodeDetailPanel
+                  node={detailNode}
+                  graphData={graphData}
+                  onClose={handleCloseDetail}
+                  onExpandNeighbors={handleExpandNeighbors}
+                  onLocateInModel={handleLocateInModel}
+                  onNodeSelect={handleNodeSelectFromDetail}
+                />
+              </div>
+            )}
+            {/* Control Panel - takes remaining space */}
+            <div className={detailNode ? 'flex-1 min-h-0' : 'h-full'}>
+              <ControlPanel 
+                onCommandProcessed={handleCommand}
+                filteredCount={activeElements.length}
+              />
+            </div>
           </div>
         </main>
       </div>
