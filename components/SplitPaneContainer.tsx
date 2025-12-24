@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { useLayoutState } from '../contexts/LayoutStateProvider';
 
 interface SplitPaneContainerProps {
@@ -12,49 +12,54 @@ const SplitPaneContainer: React.FC<SplitPaneContainerProps> = ({
 }) => {
   const { dividerPosition, setDividerPosition } = useLayoutState();
   const containerRef = useRef<HTMLDivElement>(null);
-  const isDragging = useRef(false);
+  const [isDragging, setIsDragging] = useState(false);
   const startY = useRef(0);
   const startRatio = useRef(0);
 
   // 处理鼠标按下事件
-  const handleMouseDown = (e: React.MouseEvent) => {
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
     if (!containerRef.current) return;
-    isDragging.current = true;
+    setIsDragging(true);
     startY.current = e.clientY;
     startRatio.current = dividerPosition;
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
-  };
-
-  // 处理双击事件，重置为60%/40%比例
-  const handleDoubleClick = () => {
-    setDividerPosition(0.6);
-  };
+  }, [dividerPosition]);
 
   // 处理鼠标移动事件
-  const handleMouseMove = (e: MouseEvent) => {
-    if (!isDragging.current || !containerRef.current) return;
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    if (!isDragging || !containerRef.current) return;
     const containerHeight = containerRef.current.offsetHeight;
     const deltaY = e.clientY - startY.current;
     const deltaRatio = deltaY / containerHeight;
     const newRatio = startRatio.current - deltaRatio;
     setDividerPosition(newRatio);
-  };
+  }, [isDragging, setDividerPosition]);
 
   // 处理鼠标释放事件
-  const handleMouseUp = () => {
-    isDragging.current = false;
-    document.removeEventListener('mousemove', handleMouseMove);
-    document.removeEventListener('mouseup', handleMouseUp);
-  };
+  const handleMouseUp = useCallback(() => {
+    setIsDragging(false);
+  }, []);
 
-  // 清理事件监听器
+  // 处理双击事件，重置为60%/40%比例
+  const handleDoubleClick = useCallback(() => {
+    setDividerPosition(0.6);
+  }, [setDividerPosition]);
+
+  // 添加和移除事件监听器
   useEffect(() => {
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    } else {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    }
+
     return () => {
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-  }, []);
+  }, [isDragging, handleMouseMove, handleMouseUp]);
 
   return (
     <div className="flex flex-col h-full" ref={containerRef}>
