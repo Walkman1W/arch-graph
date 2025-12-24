@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import DashboardHeader from './components/DashboardHeader';
 import SpeckleViewer from './components/SpeckleViewer';
 import ControlPanel from './components/ControlPanel';
+import SplitPaneContainer from './components/SplitPaneContainer';
 import { BIMQueryResponse, BIMOperation, MockBIMElement } from './types';
 
 // Mock data generator for simulation
@@ -58,36 +59,51 @@ const App: React.FC = () => {
       <DashboardHeader />
       
       <main className="flex-1 flex overflow-hidden">
-        {/* Left Side: 3D Model & Overlays */}
+        {/* Left Side: 3D Model & Graph Viewer */}
         <div className="flex-1 relative bg-slate-100 min-w-0">
-          <SpeckleViewer embedUrl="https://app.speckle.systems/projects/0876633ea1/models/1e05934141?embedToken=3d3c2e0ab4878e7d01b16a1608e78e03848887eed4#embed=%7B%22isEnabled%22%3Atrue%7D" />
+          <SplitPaneContainer 
+            topPane={
+              <div className="h-full w-full">
+                <SpeckleViewer embedUrl="https://app.speckle.systems/projects/0876633ea1/models/1e05934141?embedToken=3d3c2e0ab4878e7d01b16a1608e78e03848887eed4#embed=%7B%22isEnabled%22%3Atrue%7D" />
 
-          {/* Status Overlay (Top Left) */}
-          <div className="absolute top-4 left-4 z-20 flex flex-col gap-2 pointer-events-none">
-             <div className="bg-white/90 backdrop-blur shadow-sm border border-slate-200 rounded-lg px-4 py-2 flex items-center gap-3 pointer-events-auto">
-               <div className={`w-2 h-2 rounded-full ${activeElements.length < allElements.length ? 'bg-blue-500' : 'bg-slate-300'}`}></div>
-               <div>
-                 <p className="text-xs text-slate-500 uppercase font-bold tracking-wider">Visibility</p>
-                 <p className="text-sm font-semibold text-slate-800">{activeElements.length} / {allElements.length} Elements</p>
-               </div>
-             </div>
-          </div>
+                {/* Status Overlay (Top Left) */}
+                <div className="absolute top-4 left-4 z-20 flex flex-col gap-2 pointer-events-none">
+                   <div className="bg-white/90 backdrop-blur shadow-sm border border-slate-200 rounded-lg px-4 py-2 flex items-center gap-3 pointer-events-auto">
+                     <div className={`w-2 h-2 rounded-full ${activeElements.length < allElements.length ? 'bg-blue-500' : 'bg-slate-300'}`}></div>
+                     <div>
+                       <p className="text-xs text-slate-500 uppercase font-bold tracking-wider">Visibility</p>
+                       <p className="text-sm font-semibold text-slate-800">{activeElements.length} / {allElements.length} Elements</p>
+                     </div>
+                   </div>
+                </div>
 
-          {/* Current Active Filter Tags (Bottom Left) */}
-          {currentFilter && currentFilter.operation !== 'RESET' && (
-            <div className="absolute bottom-4 left-4 z-20 flex flex-wrap gap-2 max-w-md pointer-events-none">
-               {currentFilter.operation && (
-                 <span className="px-3 py-1 bg-slate-900 text-white text-xs font-mono rounded-md shadow-lg">
-                   CMD: {currentFilter.operation}
-                 </span>
-               )}
-               {currentFilter.category && (
-                 <span className="px-3 py-1 bg-blue-600 text-white text-xs font-semibold rounded-md shadow-lg">
-                   {currentFilter.category}
-                 </span>
-               )}
-            </div>
-          )}
+                {/* Current Active Filter Tags (Bottom Left) */}
+                {currentFilter && currentFilter.operation !== 'RESET' && (
+                  <div className="absolute bottom-4 left-4 z-20 flex flex-wrap gap-2 max-w-md pointer-events-none">
+                     {currentFilter.operation && (
+                       <span className="px-3 py-1 bg-slate-900 text-white text-xs font-mono rounded-md shadow-lg">
+                         CMD: {currentFilter.operation}
+                       </span>
+                     )}
+                     {currentFilter.category && (
+                       <span className="px-3 py-1 bg-blue-600 text-white text-xs font-semibold rounded-md shadow-lg">
+                         {currentFilter.category}
+                       </span>
+                     )}
+                  </div>
+                )}
+              </div>
+            }
+            bottomPane={
+              <div className="h-full w-full bg-white flex items-center justify-center">
+                <div className="text-center">
+                  <h3 className="text-2xl font-bold text-slate-800 mb-4">Graph Viewer</h3>
+                  <p className="text-slate-600">This is a placeholder for the Neo4j graph visualization</p>
+                  <p className="text-slate-500 mt-2">Drag the divider to adjust the height ratio</p>
+                </div>
+              </div>
+            }
+          />
         </div>
 
         {/* Right Side: Dialog State */}
