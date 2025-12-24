@@ -38,18 +38,21 @@ const SplitPaneContainer: React.FC<SplitPaneContainerProps> = ({
     const container = containerRef.current;
     if (!container) return;
 
-    const containerHeight = container.offsetHeight;
-    const deltaY = e.clientY - startY.current;
-    const deltaRatio = deltaY / containerHeight;
-    let newRatio = startRatio.current + deltaRatio;
+    // 使用requestAnimationFrame优化动画性能
+    requestAnimationFrame(() => {
+      const containerHeight = container.offsetHeight;
+      const deltaY = e.clientY - startY.current;
+      const deltaRatio = deltaY / containerHeight;
+      let newRatio = startRatio.current + deltaRatio;
 
-    // 应用约束
-    newRatio = Math.max(minPaneHeight, Math.min(maxPaneHeight, newRatio));
-    setSplitRatio(newRatio);
+      // 应用约束
+      newRatio = Math.max(minPaneHeight, Math.min(maxPaneHeight, newRatio));
+      setSplitRatio(newRatio);
 
-    if (onResize) {
-      onResize(newRatio);
-    }
+      if (onResize) {
+        onResize(newRatio);
+      }
+    });
   };
 
   // 处理鼠标抬起事件
@@ -84,7 +87,7 @@ const SplitPaneContainer: React.FC<SplitPaneContainerProps> = ({
     >
       {/* 上面板 */}
       <div 
-        className="flex-1 overflow-hidden transition-all duration-300 ease-in-out"
+        className="overflow-hidden transition-all duration-300 ease-in-out"
         style={{ height: `${splitRatio * 100}%` }}
       >
         {topPane}
@@ -92,14 +95,14 @@ const SplitPaneContainer: React.FC<SplitPaneContainerProps> = ({
 
       {/* 分隔条 */}
       <div
-        className={`h-2 bg-gray-200 cursor-row-resize hover:bg-gray-400 transition-colors duration-200 ${isDragging ? 'bg-blue-500' : ''}`}
+        className={`h-4 bg-gray-200 cursor-row-resize hover:bg-gray-400 transition-colors duration-200 ${isDragging ? 'bg-blue-500' : ''}`}
         onMouseDown={handleMouseDown}
         onDoubleClick={handleDoubleClick}
       />
 
       {/* 下面板 */}
       <div 
-        className="flex-1 overflow-hidden transition-all duration-300 ease-in-out"
+        className="overflow-hidden transition-all duration-300 ease-in-out"
         style={{ height: `${(1 - splitRatio) * 100}%` }}
       >
         {bottomPane}
