@@ -29,10 +29,53 @@ export interface BIMQueryResponse extends BIMActionPayload {
 
 export interface MockBIMElement {
   id: string;
-  category: string;
-  level: string;
+  type: 'space' | 'wall' | 'door' | 'window' | 'system' | 'pipe';
   name: string;
-  material: string;
+  category?: string;
+  level?: string;
+  material?: string;
+  geometry: {
+    position: [number, number, number];
+    boundingBox: BoundingBox;
+  };
+  spaceId?: string;
+  systemId?: string;
+  properties: Record<string, any>;
+}
+
+export interface MockGraphData {
+  nodes: Array<{
+    data: {
+      id: string;
+      label: string;
+      category: string;
+    };
+  }>;
+  edges: Array<{
+    data: {
+      id: string;
+      source: string;
+      target: string;
+      label: string;
+    };
+  }>;
+}
+
+export interface BoundingBox {
+  min: [number, number, number];
+  max: [number, number, number];
+  center: [number, number, number];
+  size: [number, number, number];
+}
+
+export interface ModelViewerProps {
+  elements: MockBIMElement[];
+  selectedElements: Set<string>;
+  highlightedElements: Map<string, HighlightStyle>;
+  hoveredElement: string | null;
+  onElementClick: (elementId: string) => void;
+  onElementHover: (elementId: string | null) => void;
+  paneState: PaneState;
 }
 
 export interface Message {
