@@ -99,3 +99,38 @@ export interface LayoutPreferences {
   };
   timestamp: number;
 }
+
+export interface BIMElement {
+  id: string;
+  name: string;
+  type: string;
+  spaceId?: string;
+  systemId?: string;
+  geometry: {
+    position: [number, number, number];
+    boundingBox: {
+      min: [number, number, number];
+      max: [number, number, number];
+    };
+  };
+  properties: Record<string, any>;
+}
+
+export interface GraphNode {
+  id: string;
+  label: string;
+  type: 'Project' | 'Level' | 'Space' | 'Element' | 'System' | 'Pipe' | 'Duct';
+  properties: Record<string, any>;
+}
+
+export interface GraphEdge {
+  id: string;
+  source: string;
+  target: string;
+  type: 'HAS_LEVEL' | 'CONTAINS' | 'HAS_ELEMENT' | 'PASSES_THROUGH' | 'CONNECTED_TO' | 'LOCATED_AT';
+}
+
+export interface NodePosition {
+  x: number;
+  y: number;
+}
