@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import DashboardHeader from './components/DashboardHeader';
 import SpeckleViewer from './components/SpeckleViewer';
 import ControlPanel from './components/ControlPanel';
+import GraphViewer, { GraphNode, GraphEdge } from './components/GraphViewer';
 import { LayoutStateProvider } from './contexts/LayoutStateProvider';
 import { SplitPaneContainer } from './components/SplitPaneContainer';
-import { BIMQueryResponse, BIMOperation, MockBIMElement } from './types';
+import { BIMQueryResponse, BIMOperation, MockBIMElement, PaneState, HighlightStyle } from './types';
 
 // Mock data generator for simulation
 const generateMockElements = (count: number): MockBIMElement[] => {
@@ -21,10 +22,46 @@ const generateMockElements = (count: number): MockBIMElement[] => {
   }));
 };
 
+// Mock graph data for testing
+const mockGraphNodes: GraphNode[] = [
+  { id: 'project1', label: '办公楼项目', type: 'Project', properties: { name: '办公楼项目', location: '北京' } },
+  { id: 'level1', label: '一层', type: 'Level', properties: { elevation: '0.00m' } },
+  { id: 'level2', label: '二层', type: 'Level', properties: { elevation: '4.50m' } },
+  { id: 'zone1', label: '办公区', type: 'Space', properties: { area: '200㎡' } },
+  { id: 'zone2', label: '会议室', type: 'Space', properties: { area: '50㎡' } },
+  { id: 'zone3', label: '走廊', type: 'Space', properties: { area: '30㎡' } },
+  { id: 'wall1', label: '外墙-W1', type: 'Element', properties: { material: '混凝土', thickness: '200mm' } },
+  { id: 'wall2', label: '内墙-W2', type: 'Element', properties: { material: '轻质砖', thickness: '120mm' } },
+  { id: 'column1', label: '柱子-C1', type: 'Element', properties: { material: '混凝土', size: '600x600' } },
+  { id: 'pipe1', label: '给排水管道', type: 'Pipe', properties: { diameter: '100mm', material: 'PVC' } },
+  { id: 'duct1', label: '空调风管', type: 'Duct', properties: { size: '400x200mm', material: '镀锌钢板' } },
+  { id: 'system1', label: '空调系统', type: 'System', properties: { type: 'VRV', capacity: '10HP' } }
+];
+
+const mockGraphEdges: GraphEdge[] = [
+  { id: 'e1', source: 'project1', target: 'level1', type: 'HAS_LEVEL' },
+  { id: 'e2', source: 'project1', target: 'level2', type: 'HAS_LEVEL' },
+  { id: 'e3', source: 'level1', target: 'zone1', type: 'CONTAINS' },
+  { id: 'e4', source: 'level1', target: 'zone2', type: 'CONTAINS' },
+  { id: 'e5', source: 'level1', target: 'zone3', type: 'CONTAINS' },
+  { id: 'e6', source: 'zone1', target: 'wall1', type: 'HAS_ELEMENT' },
+  { id: 'e7', source: 'zone1', target: 'wall2', type: 'HAS_ELEMENT' },
+  { id: 'e8', source: 'zone2', target: 'column1', type: 'HAS_ELEMENT' },
+  { id: 'e9', source: 'project1', target: 'system1', type: 'HAS_ELEMENT' },
+  { id: 'e10', source: 'system1', target: 'duct1', type: 'CONNECTED_TO' },
+  { id: 'e11', source: 'level1', target: 'pipe1', type: 'PASSES_THROUGH' },
+  { id: 'e12', source: 'level2', target: 'pipe1', type: 'PASSES_THROUGH' }
+];
+
 const App: React.FC = () => {
   const [allElements] = useState<MockBIMElement[]>(generateMockElements(500));
   const [activeElements, setActiveElements] = useState<MockBIMElement[]>([]);
   const [currentFilter, setCurrentFilter] = useState<BIMQueryResponse | null>(null);
+  const [selectedNodes, setSelectedNodes] = useState<Set<string>>(new Set());
+  const [hoveredNode, setHoveredNode] = useState<string | null>(null);
+  const [paneState, setPaneState] = useState<PaneState>('normal');
+  const [layoutMode, setLayoutMode] = useState<'hierarchy' | 'force' | 'circular'>('hierarchy');
+  const highlightedNodes = new Map<string, HighlightStyle>();
 
   useEffect(() => {
     setActiveElements(allElements);
@@ -53,6 +90,27 @@ const App: React.FC = () => {
     }
 
     setActiveElements(filtered);
+  };
+
+  const handleNodeClick = (nodeId: string) => {
+    console.log('Node clicked:', nodeId);
+    setSelectedNodes(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(nodeId)) {
+        newSet.delete(nodeId);
+      } else {
+        newSet.add(nodeId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleNodeHover = (nodeId: string | null) => {
+    setHoveredNode(nodeId);
+  };
+
+  const handleLayoutChange = (mode: 'hierarchy' | 'force' | 'circular') => {
+    setLayoutMode(mode);
   };
 
   return (
@@ -98,14 +156,18 @@ const App: React.FC = () => {
                   )}
                 </div>
               }
-              bottomPane={
-                <div className="w-full h-full bg-gradient-to-br from-green-50 to-green-100 flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="text-6xl mb-4">🕸️</div>
-                    <h2 className="text-2xl font-bold text-slate-700 mb-2">图谱可视化</h2>
-                    <p className="text-slate-600">Cytoscape.js 图谱将在任务 6 中实现</p>
-                  </div>
-                </div>
+              bottomPane={<GraphViewer
+                  nodes={mockGraphNodes}
+                  edges={mockGraphEdges}
+                  selectedNodes={selectedNodes}
+                  highlightedNodes={highlightedNodes}
+                  hoveredNode={hoveredNode}
+                  onNodeClick={handleNodeClick}
+                  onNodeHover={handleNodeHover}
+                  paneState={paneState}
+                  layoutMode={layoutMode}
+                  onLayoutChange={handleLayoutChange}
+                />
               }
             />
           </div>

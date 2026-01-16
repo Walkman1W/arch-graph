@@ -18,6 +18,9 @@ export default defineConfig(({ mode }) => {
         alias: {
           '@': path.resolve(__dirname, '.'),
         }
+      },
+      optimizeDeps: {
+        include: ['cytoscape', 'cytoscape-dagre', 'cytoscape-cose-bilkent'],
       }
     };
 });
