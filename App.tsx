@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import DashboardHeader from './components/DashboardHeader';
 import SpeckleViewer from './components/SpeckleViewer';
 import ControlPanel from './components/ControlPanel';
-import { LayoutStateProvider } from './contexts/LayoutStateProvider';
+import { LayoutStateProvider, useLayoutState } from './contexts/LayoutStateProvider';
 import { SplitPaneContainer } from './components/SplitPaneContainer';
+import GraphViewer from './components/GraphViewer';
 import { BIMQueryResponse, BIMOperation, MockBIMElement } from './types';
 
 // Mock data generator for simulation
@@ -25,6 +26,10 @@ const App: React.FC = () => {
   const [allElements] = useState<MockBIMElement[]>(generateMockElements(500));
   const [activeElements, setActiveElements] = useState<MockBIMElement[]>([]);
   const [currentFilter, setCurrentFilter] = useState<BIMQueryResponse | null>(null);
+  const [selectedNode, setSelectedNode] = useState<string | null>(null);
+  const [highlightedNodes, setHighlightedNodes] = useState<Set<string>>(new Set());
+  const [graphLayoutMode, setGraphLayoutMode] = useState<'hierarchical' | 'force-directed' | 'circular'>('hierarchical');
+  const [panelState, setPanelState] = useState({ isMaximized: false, isMinimized: false });
 
   useEffect(() => {
     setActiveElements(allElements);
@@ -53,6 +58,42 @@ const App: React.FC = () => {
     }
 
     setActiveElements(filtered);
+  };
+
+  // Sample graph data for GraphViewer
+  const graphNodes = [
+    { id: 'n1', label: '建筑系统', category: 'system' as const },
+    { id: 'n2', label: '结构空间', category: 'space' as const, parentId: 'n1' },
+    { id: 'n3', label: 'MEP空间', category: 'space' as const, parentId: 'n1' },
+    { id: 'n4', label: '柱子', category: 'element' as const, parentId: 'n2' },
+    { id: 'n5', label: '墙体', category: 'element' as const, parentId: 'n2' },
+    { id: 'n6', label: '楼板', category: 'element' as const, parentId: 'n2' },
+    { id: 'n7', label: '风管', category: 'element' as const, parentId: 'n3' },
+    { id: 'n8', label: '水管', category: 'element' as const, parentId: 'n3' },
+    { id: 'n9', label: '电气', category: 'element' as const, parentId: 'n3' },
+    { id: 'n10', label: '混凝土柱', category: 'element' as const, parentId: 'n4' },
+    { id: 'n11', label: '钢柱', category: 'element' as const, parentId: 'n4' },
+  ];
+
+  const graphEdges = [
+    { id: 'e1', source: 'n1', target: 'n2', relationship: 'contains' },
+    { id: 'e2', source: 'n1', target: 'n3', relationship: 'contains' },
+    { id: 'e3', source: 'n2', target: 'n4', relationship: 'contains' },
+    { id: 'e4', source: 'n2', target: 'n5', relationship: 'contains' },
+    { id: 'e5', source: 'n2', target: 'n6', relationship: 'contains' },
+    { id: 'e6', source: 'n3', target: 'n7', relationship: 'contains' },
+    { id: 'e7', source: 'n3', target: 'n8', relationship: 'contains' },
+    { id: 'e8', source: 'n3', target: 'n9', relationship: 'contains' },
+    { id: 'e9', source: 'n4', target: 'n10', relationship: 'contains' },
+    { id: 'e10', source: 'n4', target: 'n11', relationship: 'contains' },
+  ];
+
+  const handleGraphLayoutChange = (mode: 'hierarchical' | 'force-directed' | 'circular') => {
+    setGraphLayoutMode(mode);
+  };
+
+  const handlePanelStateChange = (state: { isMaximized: boolean; isMinimized: boolean }) => {
+    setPanelState(state);
   };
 
   return (
@@ -99,12 +140,32 @@ const App: React.FC = () => {
                 </div>
               }
               bottomPane={
-                <div className="w-full h-full bg-gradient-to-br from-green-50 to-green-100 flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="text-6xl mb-4">🕸️</div>
-                    <h2 className="text-2xl font-bold text-slate-700 mb-2">图谱可视化</h2>
-                    <p className="text-slate-600">Cytoscape.js 图谱将在任务 6 中实现</p>
-                  </div>
+                <div className="w-full h-full bg-white">
+                  <GraphViewer
+                  nodes={graphNodes}
+                  edges={graphEdges}
+                  selectedNodeId={selectedNode}
+                  highlightedNodeIds={Array.from(highlightedNodes)}
+                  layoutMode={graphLayoutMode}
+                  onNodeClick={setSelectedNode}
+                  onNodeHover={(nodeId) => {
+                    if (nodeId) {
+                      const relatedEdges = graphEdges.filter(
+                        e => e.source === nodeId || e.target === nodeId
+                      );
+                      const relatedNodes = new Set<string>();
+                      relatedEdges.forEach(e => {
+                        relatedNodes.add(e.source);
+                        relatedNodes.add(e.target);
+                      });
+                      setHighlightedNodes(relatedNodes);
+                    } else {
+                      setHighlightedNodes(new Set());
+                    }
+                  }}
+                  onLayoutChange={setGraphLayoutMode}
+                  panelState={panelState}
+                />
                 </div>
               }
             />
