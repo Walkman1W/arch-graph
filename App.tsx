@@ -4,6 +4,7 @@ import SpeckleViewer from './components/SpeckleViewer';
 import ControlPanel from './components/ControlPanel';
 import { LayoutStateProvider } from './contexts/LayoutStateProvider';
 import { SplitPaneContainer } from './components/SplitPaneContainer';
+import GraphViewer from './components/GraphViewer';
 import { BIMQueryResponse, BIMOperation, MockBIMElement } from './types';
 
 // Mock data generator for simulation
@@ -99,13 +100,7 @@ const App: React.FC = () => {
                 </div>
               }
               bottomPane={
-                <div className="w-full h-full bg-gradient-to-br from-green-50 to-green-100 flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="text-6xl mb-4">🕸️</div>
-                    <h2 className="text-2xl font-bold text-slate-700 mb-2">图谱可视化</h2>
-                    <p className="text-slate-600">Cytoscape.js 图谱将在任务 6 中实现</p>
-                  </div>
-                </div>
+                <GraphViewer />
               }
             />
           </div>

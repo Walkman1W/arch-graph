@@ -13,6 +13,8 @@
   },
   "dependencies": {
     "@google/genai": "^1.30.0",
+    "@types/cytoscape": "^3.21.9",
+    "cytoscape": "^3.33.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },
