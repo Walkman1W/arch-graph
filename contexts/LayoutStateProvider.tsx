@@ -165,6 +165,17 @@ export const LayoutStateProvider: React.FC<LayoutStateProviderProps> = ({ childr
       });
       window.dispatchEvent(event);
 
+      // Emit graph center signal when selecting from model
+      if (source === 'model') {
+        const centerEvent = new CustomEvent('graph:center-nodes', {
+          detail: {
+            nodeIds: [elementId],
+            animate: true,
+          },
+        });
+        window.dispatchEvent(centerEvent);
+      }
+
       return {
         ...prev,
         selectedElements: newSelected,
@@ -179,6 +190,15 @@ export const LayoutStateProvider: React.FC<LayoutStateProviderProps> = ({ childr
       elementIds.forEach(id => {
         newHighlighted.set(id, style);
       });
+
+      // Emit graph highlight signal
+      const highlightEvent = new CustomEvent('graph:highlight-nodes', {
+        detail: {
+          nodeIds: elementIds,
+          highlightStyle: style,
+        },
+      });
+      window.dispatchEvent(highlightEvent);
 
       return {
         ...prev,

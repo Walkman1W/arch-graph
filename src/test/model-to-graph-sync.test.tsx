@@ -28,6 +28,52 @@ describe('模型到图谱同步 - 属性 8', () => {
     expect(result.current.highlightedElements.get(elementId)).toEqual(highlightStyle);
   });
 
+  it('图谱查看器应接收到高亮信号', () => {
+    const { result } = renderHook(() => useLayoutState(), { wrapper });
+    
+    const graphHighlightHandler = vi.fn();
+    window.addEventListener('graph:highlight-nodes', graphHighlightHandler);
+
+    const elementId = 'element-123';
+    const highlightStyle: HighlightStyle = {
+      color: '#3b82f6',
+      category: 'element',
+      intensity: 'selected'
+    };
+
+    act(() => {
+      result.current.selectElement(elementId, 'model');
+      result.current.highlightElements([elementId], highlightStyle);
+    });
+
+    expect(graphHighlightHandler).toHaveBeenCalledTimes(1);
+    const eventDetail = graphHighlightHandler.mock.calls[0][0].detail;
+    expect(eventDetail.nodeIds).toContain(elementId);
+    expect(eventDetail.highlightStyle).toEqual(highlightStyle);
+
+    window.removeEventListener('graph:highlight-nodes', graphHighlightHandler);
+  });
+
+  it('图谱查看器应接收到居中信号', () => {
+    const { result } = renderHook(() => useLayoutState(), { wrapper });
+    
+    const graphCenterHandler = vi.fn();
+    window.addEventListener('graph:center-nodes', graphCenterHandler);
+
+    const elementId = 'element-123';
+
+    act(() => {
+      result.current.selectElement(elementId, 'model');
+    });
+
+    expect(graphCenterHandler).toHaveBeenCalledTimes(1);
+    const eventDetail = graphCenterHandler.mock.calls[0][0].detail;
+    expect(eventDetail.nodeIds).toContain(elementId);
+    expect(eventDetail.animate).toBe(true);
+
+    window.removeEventListener('graph:center-nodes', graphCenterHandler);
+  });
+
   it('点击元素时应触发自定义事件', () => {
     const { result } = renderHook(() => useLayoutState(), { wrapper });
     

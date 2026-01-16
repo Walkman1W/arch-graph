@@ -35,7 +35,9 @@ const ModelViewer: React.FC<ModelViewerProps> = ({
     highlightedElements, 
     hoveredElement,
     selectElement, 
-    setHoveredElement 
+    setHoveredElement,
+    highlightElements,
+    clearHighlights
   } = useLayoutState();
   
   const containerRef = useRef<HTMLDivElement>(null);
@@ -57,7 +59,21 @@ const ModelViewer: React.FC<ModelViewerProps> = ({
 
   const handleElementHover = useCallback((elementId: string | null) => {
     setHoveredElement(elementId);
-  }, [setHoveredElement]);
+    
+    if (elementId) {
+      const element = elements.find(el => el.id === elementId);
+      if (element) {
+        const previewStyle: HighlightStyle = {
+          color: '',
+          category: element.category as any,
+          intensity: 'preview'
+        };
+        highlightElements([elementId], previewStyle);
+      }
+    } else {
+      clearHighlights();
+    }
+  }, [setHoveredElement, highlightElements, clearHighlights, elements]);
 
   const getHighlightColor = useCallback((style: HighlightStyle): string => {
     const colorMap: Record<string, string> = {
@@ -150,6 +166,15 @@ const ModelViewer: React.FC<ModelViewerProps> = ({
         className="absolute inset-0 w-full h-full"
         onLoad={handleIframeLoad}
       />
+      
+      {paneState !== 'minimized' && (
+        <div className="absolute inset-0 pointer-events-none z-10">
+          {Array.from(selectedElements).map(elementId => {
+            const element = elements.find(el => el.id === elementId);
+            return element ? renderBoundingBox(element) : null;
+          })}
+        </div>
+      )}
       
       {isIframeLoaded && (
         <>
