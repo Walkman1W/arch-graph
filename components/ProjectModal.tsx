@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Project, ProjectModalState, ProjectFormData } from '../types';
+import { useI18n } from '../i18n';
 
 interface ProjectModalProps {
   modalState: ProjectModalState;
@@ -20,6 +21,7 @@ const ProjectModal: React.FC<ProjectModalProps> = ({
   onSelectProject,
   onSwitchMode,
 }) => {
+  const { translations } = useI18n();
   const [formData, setFormData] = useState<ProjectFormData>({
     name: '',
     speckleUrl: '',
@@ -38,13 +40,13 @@ const ProjectModal: React.FC<ProjectModalProps> = ({
     const newErrors: Partial<Record<keyof ProjectFormData, string>> = {};
 
     if (!formData.name.trim()) {
-      newErrors.name = '项目名称不能为空';
+      newErrors.name = translations.projectModal.errors.nameRequired;
     }
 
     if (!formData.speckleUrl.trim()) {
-      newErrors.speckleUrl = 'Speckle URL 不能为空';
+      newErrors.speckleUrl = translations.projectModal.errors.urlRequired;
     } else if (!formData.speckleUrl.includes('speckle.systems')) {
-      newErrors.speckleUrl = '请输入有效的 Speckle URL';
+      newErrors.speckleUrl = translations.projectModal.errors.invalidUrl;
     }
 
     setErrors(newErrors);
@@ -75,10 +77,10 @@ const ProjectModal: React.FC<ProjectModalProps> = ({
         <div className="flex items-center justify-between p-6 border-b border-slate-200">
           <div>
             <h2 className="text-2xl font-bold text-slate-800">
-              {modalState.mode === 'add' ? '添加新项目' : '项目管理'}
+              {modalState.mode === 'add' ? translations.projectModal.addTitle : translations.projectModal.viewTitle}
             </h2>
             <p className="text-sm text-slate-500 mt-1">
-              {modalState.mode === 'add' ? '添加一个新的 Speckle 项目' : '管理您的 BIM 项目'}
+              {modalState.mode === 'add' ? translations.projectModal.addDescription : translations.projectModal.viewDescription}
             </p>
           </div>
           <button
@@ -97,8 +99,8 @@ const ProjectModal: React.FC<ProjectModalProps> = ({
               {projects.length === 0 ? (
                 <div className="text-center py-12">
                   <div className="text-6xl mb-4">📁</div>
-                  <h3 className="text-xl font-semibold text-slate-700 mb-2">暂无项目</h3>
-                  <p className="text-slate-500 mb-6">点击右上角的 + 按钮添加您的第一个项目</p>
+                  <h3 className="text-xl font-semibold text-slate-700 mb-2">{translations.projectModal.emptyState.title}</h3>
+                  <p className="text-slate-500 mb-6">{translations.projectModal.emptyState.description}</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -120,7 +122,7 @@ const ProjectModal: React.FC<ProjectModalProps> = ({
                             <h3 className="font-semibold text-slate-800 truncate">{project.name}</h3>
                             {project.isActive && (
                               <span className="px-2 py-0.5 bg-blue-500 text-white text-xs rounded-full flex-shrink-0">
-                                当前
+                                {translations.projectModal.current}
                               </span>
                             )}
                           </div>
@@ -134,14 +136,14 @@ const ProjectModal: React.FC<ProjectModalProps> = ({
                                 onClick={() => onSelectProject(project.id)}
                                 className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
                               >
-                                切换到此项目
+                                {translations.projectModal.switchTo}
                               </button>
                             )}
                             <button
                               onClick={() => onDeleteProject(project.id)}
                               className="px-3 py-1.5 bg-red-50 text-red-600 text-sm rounded-lg hover:bg-red-100 transition-colors"
                             >
-                              删除
+                              {translations.projectModal.delete}
                             </button>
                           </div>
                         </div>
@@ -155,13 +157,13 @@ const ProjectModal: React.FC<ProjectModalProps> = ({
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  项目名称 <span className="text-red-500">*</span>
+                  {translations.projectModal.name} <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={e => handleInputChange('name', e.target.value)}
-                  placeholder="例如：办公楼 BIM 模型"
+                  placeholder={translations.projectModal.namePlaceholder}
                   className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
                     errors.name ? 'border-red-500' : 'border-slate-300'
                   }`}
@@ -171,7 +173,7 @@ const ProjectModal: React.FC<ProjectModalProps> = ({
 
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  Speckle Embed URL <span className="text-red-500">*</span>
+                  {translations.projectModal.url} <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="url"
@@ -184,18 +186,18 @@ const ProjectModal: React.FC<ProjectModalProps> = ({
                 />
                 {errors.speckleUrl && <p className="text-red-500 text-sm mt-1">{errors.speckleUrl}</p>}
                 <p className="text-xs text-slate-500 mt-1">
-                  请从 Speckle 项目页面复制 embed URL
+                  {translations.projectModal.urlHint}
                 </p>
               </div>
 
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  项目描述 <span className="text-slate-400">(可选)</span>
+                  {translations.projectModal.description} <span className="text-slate-400">(Optional)</span>
                 </label>
                 <textarea
                   value={formData.description}
                   onChange={e => handleInputChange('description', e.target.value)}
-                  placeholder="简要描述这个项目..."
+                  placeholder={translations.projectModal.descriptionPlaceholder}
                   rows={3}
                   className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors resize-none"
                 />
@@ -206,7 +208,7 @@ const ProjectModal: React.FC<ProjectModalProps> = ({
                   type="submit"
                   className="flex-1 px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors"
                 >
-                  添加项目
+                  {translations.projectModal.add}
                 </button>
                 <button
                   type="button"
@@ -216,7 +218,7 @@ const ProjectModal: React.FC<ProjectModalProps> = ({
                   }}
                   className="px-6 py-3 bg-slate-100 text-slate-700 font-semibold rounded-lg hover:bg-slate-200 transition-colors"
                 >
-                  重置
+                  {translations.projectModal.reset}
                 </button>
               </div>
             </form>
@@ -234,9 +236,9 @@ const ProjectModal: React.FC<ProjectModalProps> = ({
               className="w-full px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              添加新项目
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+              {translations.projectModal.addNew}
             </button>
           </div>
         )}

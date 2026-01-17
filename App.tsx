@@ -4,6 +4,7 @@ import SpeckleViewer from './components/SpeckleViewer';
 import ControlPanel from './components/ControlPanel';
 import ProjectModal from './components/ProjectModal';
 import { LayoutStateProvider } from './contexts/LayoutStateProvider';
+import { I18nProvider, useI18n } from './i18n';
 import { SplitPaneContainer } from './components/SplitPaneContainer';
 import { BIMQueryResponse, BIMOperation, MockBIMElement, Project, ProjectModalState, ProjectFormData } from './types';
 
@@ -23,9 +24,9 @@ const loadProjectsFromStorage = (): Project[] => {
   
   const defaultProject: Project = {
     id: 'project-default',
-    name: '示例建筑模型',
+    name: 'Default Building Model',
     speckleUrl: DEFAULT_SPECKLE_URL,
-    description: '默认示例项目，展示基本的建筑模型结构',
+    description: 'Default sample project showing basic building model structure',
     thumbnail: undefined,
     createdAt: Date.now(),
     isActive: true,
@@ -58,6 +59,7 @@ const generateMockElements = (count: number): MockBIMElement[] => {
 };
 
 const App: React.FC = () => {
+  const { translations } = useI18n();
   const [allElements] = useState<MockBIMElement[]>(generateMockElements(500));
   const [activeElements, setActiveElements] = useState<MockBIMElement[]>([]);
   const [currentFilter, setCurrentFilter] = useState<BIMQueryResponse | null>(null);
@@ -150,19 +152,20 @@ const App: React.FC = () => {
   const currentProject = projects.find(p => p.isActive);
 
   return (
-    <LayoutStateProvider>
-      <div className="flex flex-col h-screen bg-slate-50 overflow-hidden">
-        <DashboardHeader 
-          onOpenProjects={handleOpenProjects}
-          currentProjectName={currentProject?.name}
-        />
+    <I18nProvider>
+      <LayoutStateProvider>
+        <div className="flex flex-col h-screen bg-slate-50 overflow-hidden">
+          <DashboardHeader 
+            onOpenProjects={handleOpenProjects}
+            currentProjectName={currentProject?.name}
+          />
         
         <main className="flex-1 flex overflow-hidden">
           {/* Left Side: Split Pane Container (70-75% width) */}
           <div className="flex-[0.7] lg:flex-[0.75] min-w-0">
             <SplitPaneContainer
-              topPaneTitle="3D 模型查看器"
-              bottomPaneTitle="图谱可视化"
+              topPaneTitle={translations.paneHeader.modelViewer}
+              bottomPaneTitle={translations.paneHeader.graphViewer}
               topPane={
                 <div className="relative w-full h-full">
                   <SpeckleViewer embedUrl={currentProject?.speckleUrl || DEFAULT_SPECKLE_URL} />
@@ -199,8 +202,8 @@ const App: React.FC = () => {
                 <div className="w-full h-full bg-gradient-to-br from-green-50 to-green-100 flex items-center justify-center">
                   <div className="text-center">
                     <div className="text-6xl mb-4">🕸️</div>
-                    <h2 className="text-2xl font-bold text-slate-700 mb-2">图谱可视化</h2>
-                    <p className="text-slate-600">Cytoscape.js 图谱将在任务 6 中实现</p>
+                    <h2 className="text-2xl font-bold text-slate-700 mb-2">{translations.paneHeader.graphViewer}</h2>
+                    <p className="text-slate-600">{translations.paneHeader.graphPlaceholder}</p>
                   </div>
                 </div>
               }
@@ -226,9 +229,10 @@ const App: React.FC = () => {
           onSelectProject={handleSelectProject}
           onSwitchMode={handleSwitchMode}
         />
-      </div>
-    </LayoutStateProvider>
-  );
+        </div>
+      </LayoutStateProvider>
+      </I18nProvider>
+    );
 };
 
 export default App;

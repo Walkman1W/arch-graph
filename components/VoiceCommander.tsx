@@ -1,19 +1,21 @@
 import React, { useState } from 'react';
 import { BIMQueryResponse, BIMSuggestion, Message } from '../types';
 import { parseBIMQuery } from '../services/geminiService';
+import { useI18n } from '../i18n';
 
 interface VoiceCommanderProps {
   onCommand: (response: BIMQueryResponse) => void;
 }
 
 const VoiceCommander: React.FC<VoiceCommanderProps> = ({ onCommand }) => {
+  const { translations } = useI18n();
   const [isListening, setIsListening] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [lastResponse, setLastResponse] = useState<BIMQueryResponse | null>(null);
 
   const startListening = () => {
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-      alert("Speech recognition is not supported in this browser.");
+      alert(translations.controlPanel.voiceNotSupported);
       return;
     }
 
@@ -80,7 +82,7 @@ const VoiceCommander: React.FC<VoiceCommanderProps> = ({ onCommand }) => {
           {isProcessing ? (
              <div className="flex items-center gap-3 text-slate-600">
                <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-               <span className="text-sm font-medium">Processing command...</span>
+               <span className="text-sm font-medium">{translations.controlPanel.processing}</span>
              </div>
           ) : (
              <div>
@@ -135,7 +137,7 @@ const VoiceCommander: React.FC<VoiceCommanderProps> = ({ onCommand }) => {
 
       {/* Helper Text */}
       <div className={`text-xs font-medium text-slate-500 bg-white/80 backdrop-blur px-3 py-1 rounded-full shadow-sm transition-opacity ${isListening ? 'opacity-0' : 'opacity-100'}`}>
-        Tap to Speak
+        {translations.controlPanel.tapToSpeak}
       </div>
     </div>
   );
