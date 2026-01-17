@@ -42,6 +42,7 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
   const cyRef = useRef<Core | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
   const [localLayoutMode, setLocalLayoutMode] = useState<LayoutMode>(layoutMode);
+  const [previousLayout, setPreviousLayout] = useState<LayoutMode | null>(null);
   
   const {
     selectedElements,
@@ -87,6 +88,12 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
   const displayNodes = nodes.length > 0 ? nodes : mockNodes;
   const displayEdges = edges.length > 0 ? edges : mockEdges;
 
+  const calculateNodeSize = useCallback((label: string): number => {
+    const baseSize = 40;
+    const lengthFactor = Math.min(label.length * 1.2, 30);
+    return Math.max(baseSize, baseSize + lengthFactor);
+  }, []);
+
   const getNodeTypeColor = useCallback((type: GraphNodeType): string => {
     const colorMap: Record<GraphNodeType, string> = {
       Project: '#6366f1',
@@ -127,7 +134,6 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
           name: 'cose',
           idealEdgeLength: 100,
           nodeOverlap: 20,
-          refresh: 20,
           fit: true,
           padding: 30,
           randomize: false,
@@ -140,7 +146,7 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
           initialTemp: 200,
           coolingFactor: 0.95,
           minTemp: 1.0,
-          animate: true,
+          animate: false,
           animationDuration: 500,
         };
     }
@@ -164,22 +170,41 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
       elements: [],
       style: [
         {
+          selector: 'node.neighbor',
+          style: {
+            'border-width': '3px',
+            'border-color': '#fbbf24',
+            'opacity': '1',
+          },
+        },
+        {
+          selector: 'edge.neighbor',
+          style: {
+            'width': '3px',
+            'line-color': '#fbbf24',
+            'target-arrow-color': '#fbbf24',
+            'opacity': '1',
+          },
+        },
+        {
           selector: 'node',
           style: {
             'background-color': (ele: NodeSingular) => getNodeTypeColor(ele.data('type') as GraphNodeType),
             'label': 'data(label)',
-            'font-size': '12px',
+            'font-size': '11px',
             'text-valign': 'center',
             'text-halign': 'center',
             'color': '#ffffff',
             'text-outline-color': '#000000',
-            'text-outline-width': '2px',
-            'width': '40px',
-            'height': '40px',
+            'text-outline-width': '1px',
+            'width': (ele: NodeSingular) => calculateNodeSize(ele.data('label') as string) + 'px',
+            'height': (ele: NodeSingular) => calculateNodeSize(ele.data('label') as string) + 'px',
             'border-width': '2px',
             'border-color': '#ffffff',
-            'transition-property': 'background-color, border-color, width, height',
+            'transition-property': 'background-color, border-color',
             'transition-duration': '0.2s',
+            'text-wrap': 'wrap',
+            'text-max-width': '80px',
           },
         },
         {
@@ -215,6 +240,8 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
       wheelSensitivity: 0.3,
       minZoom: 0.1,
       maxZoom: 3,
+      autoungrabify: false,
+      autounselectify: false,
     });
 
     cyRef.current = cy;
@@ -267,12 +294,38 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
     
     selectElement(nodeId, 'graph');
     
-    cyRef.current?.animate({
+    const cy = cyRef.current;
+    if (!cy) return;
+
+    cy.elements().removeClass('neighbor');
+    
+    const connectedEdges = node.connectedEdges();
+    const connectedNodes = connectedEdges.connectedNodes();
+    
+    connectedEdges.addClass('neighbor');
+    connectedNodes.addClass('neighbor');
+    
+    cy.animate({
       center: { eles: node },
       zoom: 1.5,
       duration: 300,
     });
   }, [selectElement]);
+
+  const handleNodeDoubleClick = useCallback((event: any) => {
+    const cy = cyRef.current;
+    if (!cy) return;
+
+    cy.elements().removeClass('neighbor');
+    
+    cy.animate({
+      fit: {
+        eles: cy.elements(),
+        padding: 50,
+      },
+      duration: 500,
+    });
+  }, []);
 
   const handleNodeHover = useCallback((event: any, isHovering: boolean) => {
     const node = event.target;
@@ -286,6 +339,19 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
       node.removeClass('preview');
     }
   }, [setHoveredElement]);
+
+  const handleLayoutModeChange = useCallback((mode: LayoutMode) => {
+    const cy = cyRef.current;
+    if (cy) {
+      setPreviousLayout(onLayoutModeChange ? layoutMode : localLayoutMode);
+    }
+    
+    if (onLayoutModeChange) {
+      onLayoutModeChange(mode);
+    } else {
+      setLocalLayoutMode(mode);
+    }
+  }, [onLayoutModeChange, layoutMode, localLayoutMode]);
 
   const expandNode = useCallback((nodeId: string) => {
     const cy = cyRef.current;
@@ -328,26 +394,19 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
     });
   }, [selectedElements]);
 
-  const handleLayoutModeChange = useCallback((mode: LayoutMode) => {
-    if (onLayoutModeChange) {
-      onLayoutModeChange(mode);
-    } else {
-      setLocalLayoutMode(mode);
-    }
-  }, [onLayoutModeChange]);
-
   useEffect(() => {
     const cy = initializeCytoscape();
     if (!cy) return;
 
     cy.on('tap', 'node', handleNodeClick);
+    cy.on('double tap', 'node', handleNodeDoubleClick);
     cy.on('mouseover', 'node', (event) => handleNodeHover(event, true));
     cy.on('mouseout', 'node', (event) => handleNodeHover(event, false));
 
     return () => {
       cy.destroy();
     };
-  }, [initializeCytoscape, handleNodeClick, handleNodeHover]);
+  }, [initializeCytoscape, handleNodeClick, handleNodeDoubleClick, handleNodeHover]);
 
   useEffect(() => {
     if (isInitialized) {
