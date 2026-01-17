@@ -1,6 +1,11 @@
 import React from 'react';
 
-const DashboardHeader: React.FC = () => {
+interface DashboardHeaderProps {
+  onOpenProjects: () => void;
+  currentProjectName?: string;
+}
+
+const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onOpenProjects, currentProjectName }) => {
   return (
     <header className="bg-white border-b border-slate-200 h-16 flex items-center px-6 justify-between flex-shrink-0 z-20">
       <div className="flex items-center gap-3">
@@ -12,7 +17,20 @@ const DashboardHeader: React.FC = () => {
       
       <div className="flex items-center gap-4">
         <div className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-600">
-          <span className="hover:text-blue-600 cursor-pointer transition-colors">Projects</span>
+          <button 
+            onClick={onOpenProjects}
+            className="flex items-center gap-2 hover:text-blue-600 cursor-pointer transition-colors group"
+          >
+            <svg className="w-5 h-5 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+            </svg>
+            <span>Projects</span>
+            {currentProjectName && (
+              <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full">
+                {currentProjectName}
+              </span>
+            )}
+          </button>
           <span className="hover:text-blue-600 cursor-pointer transition-colors">Analytics</span>
           <span className="hover:text-blue-600 cursor-pointer transition-colors">Reports</span>
         </div>

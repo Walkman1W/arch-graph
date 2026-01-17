@@ -2,11 +2,47 @@ import React, { useState, useEffect } from 'react';
 import DashboardHeader from './components/DashboardHeader';
 import SpeckleViewer from './components/SpeckleViewer';
 import ControlPanel from './components/ControlPanel';
+import ProjectModal from './components/ProjectModal';
 import { LayoutStateProvider } from './contexts/LayoutStateProvider';
 import { SplitPaneContainer } from './components/SplitPaneContainer';
-import { BIMQueryResponse, BIMOperation, MockBIMElement } from './types';
+import { BIMQueryResponse, BIMOperation, MockBIMElement, Project, ProjectModalState, ProjectFormData } from './types';
 
-// Mock data generator for simulation
+const DEFAULT_SPECKLE_URL = 'https://app.speckle.systems/projects/0876633ea1/models/1e05934141?embedToken=3d3c2e0ab4878e7d01b16a1608e78e03848887eed4#embed=%7B%22isEnabled%22%3Atrue%7D';
+
+const STORAGE_KEY = 'smartbim_projects';
+
+const loadProjectsFromStorage = (): Project[] => {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      return JSON.parse(stored);
+    }
+  } catch (error) {
+    console.error('Failed to load projects from localStorage:', error);
+  }
+  
+  const defaultProject: Project = {
+    id: 'project-default',
+    name: '示例建筑模型',
+    speckleUrl: DEFAULT_SPECKLE_URL,
+    description: '默认示例项目，展示基本的建筑模型结构',
+    thumbnail: undefined,
+    createdAt: Date.now(),
+    isActive: true,
+  };
+  
+  saveProjectsToStorage([defaultProject]);
+  return [defaultProject];
+};
+
+const saveProjectsToStorage = (projects: Project[]): void => {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
+  } catch (error) {
+    console.error('Failed to save projects to localStorage:', error);
+  }
+};
+
 const generateMockElements = (count: number): MockBIMElement[] => {
   const categories = ['Walls', 'Columns', 'Slabs', 'Windows', 'Doors', 'Beams', 'HVAC'];
   const levels = ['Foundation', 'Level 1', 'Level 2', 'Roof'];
@@ -25,10 +61,21 @@ const App: React.FC = () => {
   const [allElements] = useState<MockBIMElement[]>(generateMockElements(500));
   const [activeElements, setActiveElements] = useState<MockBIMElement[]>([]);
   const [currentFilter, setCurrentFilter] = useState<BIMQueryResponse | null>(null);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [modalState, setModalState] = useState<ProjectModalState>({
+    isOpen: false,
+    mode: 'view',
+    selectedProjectId: null,
+  });
 
   useEffect(() => {
     setActiveElements(allElements);
   }, [allElements]);
+
+  useEffect(() => {
+    const storedProjects = loadProjectsFromStorage();
+    setProjects(storedProjects);
+  }, []);
 
   const handleCommand = (response: BIMQueryResponse) => {
     setCurrentFilter(response);
@@ -55,10 +102,60 @@ const App: React.FC = () => {
     setActiveElements(filtered);
   };
 
+  const handleOpenProjects = () => {
+    setModalState({ isOpen: true, mode: 'view', selectedProjectId: null });
+  };
+
+  const handleCloseModal = () => {
+    setModalState({ isOpen: false, mode: 'view', selectedProjectId: null });
+  };
+
+  const handleSwitchMode = (mode: 'view' | 'add') => {
+    setModalState(prev => ({ ...prev, mode }));
+  };
+
+  const handleAddProject = (formData: ProjectFormData) => {
+    const newProject: Project = {
+      id: `project-${Date.now()}`,
+      name: formData.name,
+      speckleUrl: formData.speckleUrl,
+      description: formData.description,
+      thumbnail: undefined,
+      createdAt: Date.now(),
+      isActive: false,
+    };
+
+    const updatedProjects = [...projects, newProject];
+    setProjects(updatedProjects);
+    saveProjectsToStorage(updatedProjects);
+    setModalState({ isOpen: true, mode: 'view', selectedProjectId: null });
+  };
+
+  const handleDeleteProject = (projectId: string) => {
+    const updatedProjects = projects.filter(p => p.id !== projectId);
+    setProjects(updatedProjects);
+    saveProjectsToStorage(updatedProjects);
+  };
+
+  const handleSelectProject = (projectId: string) => {
+    const updatedProjects = projects.map(p => ({
+      ...p,
+      isActive: p.id === projectId,
+    }));
+    setProjects(updatedProjects);
+    saveProjectsToStorage(updatedProjects);
+    handleCloseModal();
+  };
+
+  const currentProject = projects.find(p => p.isActive);
+
   return (
     <LayoutStateProvider>
       <div className="flex flex-col h-screen bg-slate-50 overflow-hidden">
-        <DashboardHeader />
+        <DashboardHeader 
+          onOpenProjects={handleOpenProjects}
+          currentProjectName={currentProject?.name}
+        />
         
         <main className="flex-1 flex overflow-hidden">
           {/* Left Side: Split Pane Container (70-75% width) */}
@@ -68,7 +165,7 @@ const App: React.FC = () => {
               bottomPaneTitle="图谱可视化"
               topPane={
                 <div className="relative w-full h-full">
-                  <SpeckleViewer embedUrl="https://app.speckle.systems/projects/0876633ea1/models/1e05934141?embedToken=3d3c2e0ab4878e7d01b16a1608e78e03848887eed4#embed=%7B%22isEnabled%22%3Atrue%7D" />
+                  <SpeckleViewer embedUrl={currentProject?.speckleUrl || DEFAULT_SPECKLE_URL} />
                   
                   {/* Status Overlay (Top Left) */}
                   <div className="absolute top-4 left-4 z-20 flex flex-col gap-2 pointer-events-none">
@@ -118,6 +215,17 @@ const App: React.FC = () => {
             />
           </div>
         </main>
+
+        {/* Project Modal */}
+        <ProjectModal
+          modalState={modalState}
+          projects={projects}
+          onClose={handleCloseModal}
+          onAddProject={handleAddProject}
+          onDeleteProject={handleDeleteProject}
+          onSelectProject={handleSelectProject}
+          onSwitchMode={handleSwitchMode}
+        />
       </div>
     </LayoutStateProvider>
   );
