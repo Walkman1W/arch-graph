@@ -110,16 +110,14 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
           name: 'breadthfirst',
           directed: true,
           spacingFactor: 1.5,
-          animate: true,
-          animationDuration: 500,
+          animate: false,
         };
       case 'circular':
         return {
           name: 'circle',
           fit: true,
           padding: 30,
-          animate: true,
-          animationDuration: 500,
+          animate: false,
         };
       case 'force':
       default:
@@ -127,7 +125,6 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
           name: 'cose',
           idealEdgeLength: 100,
           nodeOverlap: 20,
-          refresh: 20,
           fit: true,
           padding: 30,
           randomize: false,
@@ -140,8 +137,9 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
           initialTemp: 200,
           coolingFactor: 0.95,
           minTemp: 1.0,
-          animate: true,
-          animationDuration: 500,
+          animate: false,
+          refresh: 0,
+          refreshIterations: 0,
         };
     }
   }, [layoutMode, localLayoutMode, onLayoutModeChange]);
@@ -168,35 +166,36 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
           style: {
             'background-color': (ele: NodeSingular) => getNodeTypeColor(ele.data('type') as GraphNodeType),
             'label': 'data(label)',
-            'font-size': '12px',
+            'font-size': '8px',
             'text-valign': 'center',
             'text-halign': 'center',
             'color': '#ffffff',
             'text-outline-color': '#000000',
             'text-outline-width': '2px',
-            'width': '40px',
-            'height': '40px',
+            'width': '55px',
+            'height': '55px',
             'border-width': '2px',
             'border-color': '#ffffff',
-            'transition-property': 'background-color, border-color, width, height',
+            'transition-property': 'background-color',
             'transition-duration': '0.2s',
+            'text-max-width': '50px',
+            'text-wrap': 'wrap',
+            'text-background-color': 'rgba(0,0,0,0.5)',
+            'text-background-padding': '2px',
+            'text-background-opacity': '0.9',
           },
         },
         {
           selector: 'node:selected',
           style: {
-            'border-width': '4px',
-            'border-color': '#fbbf24',
-            'width': '50px',
-            'height': '50px',
+            'background-color': '#fbbf24',
           },
         },
         {
-          selector: 'node.preview',
+          selector: 'node.neighbor',
           style: {
             'border-width': '3px',
-            'border-color': '#f59e0b',
-            'opacity': '0.8',
+            'border-color': '#22c55e',
           },
         },
         {
@@ -210,11 +209,25 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
             'opacity': '0.6',
           },
         },
+        {
+          selector: 'edge.highlighted',
+          style: {
+            'width': '3px',
+            'line-color': '#22c55e',
+            'target-arrow-color': '#22c55e',
+            'opacity': '1',
+          },
+        },
       ],
       layout: getLayoutOptions(),
       wheelSensitivity: 0.3,
       minZoom: 0.1,
       maxZoom: 3,
+      userPanningEnabled: true,
+      userZoomingEnabled: true,
+      autoungrabify: false,
+      autounselectify: false,
+      layoutOnStable: false,
     });
 
     cyRef.current = cy;
@@ -256,7 +269,8 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
     ];
 
     cy.json({ elements });
-    cy.layout(getLayoutOptions()).run();
+    const layout = cy.layout(getLayoutOptions());
+    layout.run();
 
     console.log('GraphViewer: Graph data updated and layout applied');
   }, [displayNodes, displayEdges, getLayoutOptions]);
@@ -267,11 +281,22 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
     
     selectElement(nodeId, 'graph');
     
-    cyRef.current?.animate({
-      center: { eles: node },
-      zoom: 1.5,
-      duration: 300,
-    });
+    const cy = cyRef.current;
+    if (!cy) return;
+    
+    cy.$('node.neighbor').removeClass('neighbor');
+    cy.$('edge.highlighted').removeClass('highlighted');
+    
+    const connectedEdges = node.connectedEdges();
+    const connectedNodes = connectedEdges.connectedNodes().filter((n: NodeSingular) => n.id() !== nodeId);
+    
+    connectedNodes.addClass('neighbor');
+    connectedEdges.addClass('highlighted');
+    
+    const allEles = node.union(connectedNodes).union(connectedEdges);
+    const padding = 50;
+    
+    cy.fit(allEles, padding);
   }, [selectElement]);
 
   const handleNodeHover = useCallback((event: any, isHovering: boolean) => {
@@ -280,10 +305,8 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
     
     if (isHovering) {
       setHoveredElement(nodeId);
-      node.addClass('preview');
     } else {
       setHoveredElement(null);
-      node.removeClass('preview');
     }
   }, [setHoveredElement]);
 
@@ -365,8 +388,12 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
     const cy = cyRef.current;
     if (!cy || !isInitialized) return;
 
-    cy.layout(getLayoutOptions()).run();
-  }, [layoutMode, localLayoutMode, isInitialized, getLayoutOptions]);
+    const handleModeChange = () => {
+      cy.layout(getLayoutOptions()).run();
+    };
+
+    handleModeChange();
+  }, [layoutMode, localLayoutMode]);
 
   useEffect(() => {
     const cy = cyRef.current;
