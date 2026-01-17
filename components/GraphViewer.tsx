@@ -142,6 +142,11 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
           minTemp: 1.0,
           animate: true,
           animationDuration: 500,
+          stop: () => {
+            const cy = cyRef.current;
+            if (!cy) return false;
+            return cy.$('node.grabbed').length > 0;
+          },
         };
     }
   }, [layoutMode, localLayoutMode, onLayoutModeChange]);
@@ -174,12 +179,15 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
             'color': '#ffffff',
             'text-outline-color': '#000000',
             'text-outline-width': '2px',
-            'width': '40px',
-            'height': '40px',
+            'text-wrap': 'wrap',
+            'text-max-width': '60px',
+            'width': '60px',
+            'height': '60px',
             'border-width': '2px',
             'border-color': '#ffffff',
-            'transition-property': 'background-color, border-color, width, height',
+            'transition-property': 'background-color, border-color',
             'transition-duration': '0.2s',
+            'shape': 'ellipse',
           },
         },
         {
@@ -187,16 +195,38 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
           style: {
             'border-width': '4px',
             'border-color': '#fbbf24',
-            'width': '50px',
-            'height': '50px',
+            'background-color': (ele: NodeSingular) => {
+              const baseColor = getNodeTypeColor(ele.data('type') as GraphNodeType);
+              return baseColor;
+            },
           },
         },
         {
           selector: 'node.preview',
           style: {
-            'border-width': '3px',
+            'border-width': '4px',
             'border-color': '#f59e0b',
-            'opacity': '0.8',
+            'background-color': (ele: NodeSingular) => {
+              const baseColor = getNodeTypeColor(ele.data('type') as GraphNodeType);
+              return baseColor;
+            },
+          },
+        },
+        {
+          selector: 'node.neighbor',
+          style: {
+            'border-width': '3px',
+            'border-color': '#10b981',
+            'background-color': (ele: NodeSingular) => {
+              const baseColor = getNodeTypeColor(ele.data('type') as GraphNodeType);
+              return baseColor;
+            },
+          },
+        },
+        {
+          selector: 'node.faded',
+          style: {
+            'opacity': '0.3',
           },
         },
         {
@@ -208,6 +238,21 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
             'target-arrow-shape': 'triangle',
             'curve-style': 'bezier',
             'opacity': '0.6',
+          },
+        },
+        {
+          selector: 'edge.highlighted',
+          style: {
+            'width': '3px',
+            'line-color': '#10b981',
+            'target-arrow-color': '#10b981',
+            'opacity': '1',
+          },
+        },
+        {
+          selector: 'edge.faded',
+          style: {
+            'opacity': '0.1',
           },
         },
       ],
@@ -256,25 +301,46 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
     ];
 
     cy.json({ elements });
-    cy.layout(getLayoutOptions()).run();
+    cy.stop(true, true);
 
-    console.log('GraphViewer: Graph data updated and layout applied');
-  }, [displayNodes, displayEdges, getLayoutOptions]);
+    console.log('GraphViewer: Graph data updated');
+  }, [displayNodes, displayEdges]);
 
   const handleNodeClick = useCallback((event: any) => {
+    const cy = cyRef.current;
+    if (!cy) return;
+
     const node = event.target;
     const nodeId = node.id();
     
     selectElement(nodeId, 'graph');
     
-    cyRef.current?.animate({
-      center: { eles: node },
-      zoom: 1.5,
-      duration: 300,
+    cy.elements().removeClass('preview neighbor faded highlighted');
+    node.addClass('preview');
+    
+    const connectedEdges = node.connectedEdges();
+    const connectedNodes = connectedEdges.connectedNodes();
+    
+    connectedNodes.forEach((neighbor: NodeSingular) => {
+      neighbor.addClass('neighbor');
     });
+    
+    connectedEdges.forEach((edge: EdgeSingular) => {
+      edge.addClass('highlighted');
+    });
+    
+    const allNodes = cy.nodes();
+    const relevantNodes = node.union(connectedNodes);
+    allNodes.filter((n: NodeSingular) => !relevantNodes.contains(n)).addClass('faded');
+    
+    const allEdges = cy.edges();
+    allEdges.filter((e: EdgeSingular) => !connectedEdges.contains(e)).addClass('faded');
   }, [selectElement]);
 
   const handleNodeHover = useCallback((event: any, isHovering: boolean) => {
+    const cy = cyRef.current;
+    if (!cy) return;
+
     const node = event.target;
     const nodeId = node.id();
     
@@ -286,6 +352,16 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
       node.removeClass('preview');
     }
   }, [setHoveredElement]);
+
+  const handleNodeDrag = useCallback((event: any) => {
+    const node = event.target;
+    node.lock();
+  }, []);
+
+  const handleNodeFree = useCallback((event: any) => {
+    const node = event.target;
+    node.unlock();
+  }, []);
 
   const expandNode = useCallback((nodeId: string) => {
     const cy = cyRef.current;
@@ -343,11 +419,13 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
     cy.on('tap', 'node', handleNodeClick);
     cy.on('mouseover', 'node', (event) => handleNodeHover(event, true));
     cy.on('mouseout', 'node', (event) => handleNodeHover(event, false));
+    cy.on('grab', 'node', handleNodeDrag);
+    cy.on('free', 'node', handleNodeFree);
 
     return () => {
       cy.destroy();
     };
-  }, [initializeCytoscape, handleNodeClick, handleNodeHover]);
+  }, [initializeCytoscape, handleNodeClick, handleNodeHover, handleNodeDrag, handleNodeFree]);
 
   useEffect(() => {
     if (isInitialized) {
