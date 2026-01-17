@@ -4,6 +4,7 @@ import SpeckleViewer from './components/SpeckleViewer';
 import ControlPanel from './components/ControlPanel';
 import ProjectModal from './components/ProjectModal';
 import { LayoutStateProvider } from './contexts/LayoutStateProvider';
+import { LanguageProvider } from './contexts/LanguageProvider';
 import { SplitPaneContainer } from './components/SplitPaneContainer';
 import { BIMQueryResponse, BIMOperation, MockBIMElement, Project, ProjectModalState, ProjectFormData } from './types';
 
@@ -150,7 +151,8 @@ const App: React.FC = () => {
   const currentProject = projects.find(p => p.isActive);
 
   return (
-    <LayoutStateProvider>
+    <LanguageProvider>
+      <LayoutStateProvider>
       <div className="flex flex-col h-screen bg-slate-50 overflow-hidden">
         <DashboardHeader 
           onOpenProjects={handleOpenProjects}
@@ -227,7 +229,8 @@ const App: React.FC = () => {
           onSwitchMode={handleSwitchMode}
         />
       </div>
-    </LayoutStateProvider>
+      </LayoutStateProvider>
+    </LanguageProvider>
   );
 };
 

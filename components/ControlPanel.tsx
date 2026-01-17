@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useLanguage } from '../contexts/LanguageProvider';
 import { BIMQueryResponse, Message, BIMSuggestion } from '../types';
 import { parseBIMQuery } from '../services/geminiService';
 
@@ -8,11 +9,12 @@ interface ControlPanelProps {
 }
 
 const ControlPanel: React.FC<ControlPanelProps> = ({ onCommandProcessed, filteredCount }) => {
+  const { t, language } = useLanguage();
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
       role: 'assistant',
-      text: 'Hello! I am your BIM Assistant. Describe what you want to see, and I will generate controls for you.',
+      text: t('controlPanel.greeting'),
       timestamp: new Date(),
       suggestions: [
         { label: 'Isolate Structure', payload: { operation: 'ISOLATE' as any, category: 'Columns', level: null, material: null } },
@@ -67,7 +69,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({ onCommandProcessed, filtere
       const errorMsg: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        text: "I encountered an error connecting to the AI service. Please check your API key.",
+        text: t('controlPanel.errorConnecting'),
         timestamp: new Date()
       };
       setMessages(prev => [...prev, errorMsg]);
@@ -81,7 +83,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({ onCommandProcessed, filtere
     const userMsg: Message = {
       id: Date.now().toString(),
       role: 'user',
-      text: `Selected: ${suggestion.label}`,
+      text: `${t('controlPanel.selectedPrefix')} ${suggestion.label}`,
       timestamp: new Date()
     };
     setMessages(prev => [...prev, userMsg]);
@@ -90,7 +92,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({ onCommandProcessed, filtere
     const fullResponse: BIMQueryResponse = {
       ...suggestion.payload,
       keywords: [],
-      reasoning: `Action "${suggestion.label}" applied.`,
+      reasoning: t('controlPanel.actionApplied').replace('{{label}}', suggestion.label),
       suggestions: []
     };
     onCommandProcessed(fullResponse);
@@ -100,7 +102,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({ onCommandProcessed, filtere
       setMessages(prev => [...prev, {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        text: `I've applied the filter: ${suggestion.label}`,
+        text: t('controlPanel.filterApplied').replace('{{label}}', suggestion.label),
         timestamp: new Date()
       }]);
     }, 400);
@@ -116,7 +118,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({ onCommandProcessed, filtere
   const toggleMicrophone = () => {
     // Check browser support
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-      alert("Speech recognition is not supported in this browser.");
+      alert(t('controlPanel.speechNotSupported'));
       return;
     }
 
@@ -132,7 +134,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({ onCommandProcessed, filtere
     
     recognition.continuous = false;
     recognition.interimResults = false;
-    recognition.lang = 'en-US';
+    recognition.lang = language === 'zh' ? 'zh-CN' : 'en-US';
 
     recognition.onresult = (event: any) => {
       const transcript = event.results[0][0].transcript;
@@ -157,12 +159,12 @@ const ControlPanel: React.FC<ControlPanelProps> = ({ onCommandProcessed, filtere
       {/* Header */}
       <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
         <div>
-          <h2 className="font-bold text-slate-800">AI Commander</h2>
-          <p className="text-xs text-slate-500">Powered by Gemini 2.5</p>
+          <h2 className="font-bold text-slate-800">{t('controlPanel.title')}</h2>
+          <p className="text-xs text-slate-500">{t('controlPanel.poweredBy')}</p>
         </div>
         <div className="flex items-center gap-2 bg-blue-50 px-3 py-1 rounded-full border border-blue-100">
           <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
-          <span className="text-xs font-bold text-blue-700">{filteredCount} Elements</span>
+          <span className="text-xs font-bold text-blue-700">{filteredCount} {t('controlPanel.elements')}</span>
         </div>
       </div>
 
@@ -209,18 +211,18 @@ const ControlPanel: React.FC<ControlPanelProps> = ({ onCommandProcessed, filtere
 
       {/* Quick Actions Toolbar */}
       <div className="px-4 py-2 bg-slate-50 border-t border-slate-100 flex gap-2 overflow-x-auto no-scrollbar items-center">
-         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap mr-1">AI Tools:</span>
+         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap mr-1">{t('controlPanel.aiTools')}:</span>
          <button 
             onClick={() => handleSendMessage("Analyze structural elements")}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-600 text-xs font-medium rounded-full border border-indigo-100 hover:bg-indigo-100 transition-colors whitespace-nowrap"
          >
-            <span className="text-lg">🏗️</span> Analyze Structure
+            <span className="text-lg">🏗️</span> {t('controlPanel.analyzeStructure')}
          </button>
          <button 
             onClick={() => handleSendMessage("Show Mechanical and HVAC systems")}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-600 text-xs font-medium rounded-full border border-emerald-100 hover:bg-emerald-100 transition-colors whitespace-nowrap"
          >
-            <span className="text-lg">🔧</span> MEP Check
+            <span className="text-lg">🔧</span> {t('controlPanel.mepCheck')}
          </button>
       </div>
 
@@ -232,7 +234,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({ onCommandProcessed, filtere
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Ask AI to filter (e.g. 'Show beams')..."
+            placeholder={t('controlPanel.placeholder')}
             className="w-full pl-4 pr-24 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm"
           />
           
@@ -242,7 +244,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({ onCommandProcessed, filtere
               className={`p-2 rounded-lg transition-colors ${
                 isListening ? 'bg-red-100 text-red-600 animate-pulse' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'
               }`}
-              title="Toggle Microphone"
+              title={t('controlPanel.toggleMicrophone')}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>
             </button>

@@ -1,0 +1,101 @@
+{
+  "header": {
+    "title": "SmartBIM",
+    "projects": "Projects",
+    "analytics": "Analytics",
+    "reports": "Reports",
+    "user": "Architect Doe"
+  },
+  "modelViewer": {
+    "title": "3D Model Viewer",
+    "noModel": "No model loaded",
+    "selected": "Selected",
+    "liveModel": "Live Model",
+    "minimized": "Model Viewer Minimized"
+  },
+  "graphViewer": {
+    "title": "Graph Viewer",
+    "layout": "Layout",
+    "hierarchy": "Hierarchy",
+    "force": "Force",
+    "circular": "Circular",
+    "selected": "Selected",
+    "nodes": "Nodes",
+    "nodeTypes": "Node Types",
+    "minimized": "Graph Viewer Minimized",
+    "notLoaded": "Cytoscape.js Not Loaded",
+    "installMessage": "Please install: npm install cytoscape"
+  },
+  "voiceCommander": {
+    "processing": "Processing command...",
+    "tapToSpeak": "Tap to Speak",
+    "notSupported": "Speech recognition is not supported in your browser. Please use Chrome or Edge.",
+    "transcript": "Command Transcript",
+    "command": "Command",
+    "response": "Response",
+    "clear": "Clear All"
+  },
+  "languages": {
+    "english": "English",
+    "chinese": "中文"
+  },
+  "controlPanel": {
+    "title": "AI Commander",
+    "poweredBy": "Powered by Gemini 2.5",
+    "elements": "Elements",
+    "greeting": "Hello! I am your BIM Assistant. Describe what you want to see, and I will generate controls for you.",
+    "aiTools": "AI Tools",
+    "analyzeStructure": "Analyze Structure",
+    "mepCheck": "MEP Check",
+    "placeholder": "Ask AI to filter (e.g. 'Show beams')...",
+    "toggleMicrophone": "Toggle Microphone",
+    "speechNotSupported": "Speech recognition is not supported in this browser.",
+    "selectedPrefix": "Selected:",
+    "actionApplied": "Action '{{label}}' applied.",
+    "filterApplied": "I've applied the filter: {{label}}",
+    "errorConnecting": "I encountered an error connecting to the AI service. Please check your API key."
+  },
+  "projectModal": {
+    "title": "Project Management",
+    "manageProjects": "Manage Projects",
+    "manageBIMProjects": "Manage your BIM projects and Speckle streams",
+    "addNewProject": "Add New Project",
+    "addSpeckleProject": "Add a new Speckle project by entering the stream URL",
+    "noProjects": "No Projects Found",
+    "addFirstProject": "Get started by adding your first project",
+    "current": "Current",
+    "switchToProject": "Switch to Project",
+    "delete": "Delete",
+    "projectName": "Project Name",
+    "projectNamePlaceholder": "Enter project name",
+    "speckleUrl": "Speckle Stream URL",
+    "speckleUrlPlaceholder": "https://app.speckle.systems/projects/...",
+    "copyEmbedUrl": "Copy the embed URL from your Speckle project",
+    "projectDescription": "Project Description",
+    "optional": "Optional",
+    "projectDescriptionPlaceholder": "Add a description for this project (optional)",
+    "addProject": "Add Project",
+    "reset": "Reset",
+    "editProject": "Edit Project",
+    "form": {
+      "name": "Project Name",
+      "speckleUrl": "Speckle Stream URL"
+    },
+    "button": {
+      "save": "Save",
+      "cancel": "Cancel",
+      "delete": "Delete",
+      "confirmDelete": "Confirm Delete",
+      "close": "Close"
+    },
+    "errors": {
+      "nameRequired": "Project name is required",
+      "urlRequired": "Speckle URL is required",
+      "invalidUrl": "Please enter a valid Speckle URL"
+    },
+    "confirm": {
+      "deleteProject": "Are you sure you want to delete this project?",
+      "deleteWarning": "This action cannot be undone."
+    }
+  }
+}

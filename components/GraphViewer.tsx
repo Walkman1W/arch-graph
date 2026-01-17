@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useCallback, useState } from 'react';
 import { PaneState, HighlightStyle } from '../types';
+import { useLanguage } from '../contexts/LanguageProvider';
 
 // Graph data types
 export interface GraphNode {
@@ -45,6 +46,7 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
   const cyRef = useRef<any>(null); // Cytoscape instance
   const [currentLayout, setCurrentLayout] = useState<LayoutMode>(layoutMode);
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
+  const { t } = useLanguage();
 
   // Initialize Cytoscape
   useEffect(() => {
@@ -375,7 +377,7 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
       {/* Layout controls */}
       {paneState !== 'minimized' && (
         <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm rounded-lg shadow-sm border border-slate-200 z-10 p-2">
-          <div className="text-xs text-slate-600 mb-2 font-semibold">Layout</div>
+          <div className="text-xs text-slate-600 mb-2 font-semibold">{t('graphViewer.layout')}</div>
           <div className="flex flex-col gap-1">
             <button
               onClick={() => changeLayout('hierarchy')}
@@ -385,7 +387,7 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
                   : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
               }`}
             >
-              Hierarchy
+              {t('graphViewer.hierarchy')}
             </button>
             <button
               onClick={() => changeLayout('force')}
@@ -395,7 +397,7 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
                   : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
               }`}
             >
-              Force
+              {t('graphViewer.force')}
             </button>
             <button
               onClick={() => changeLayout('circular')}
@@ -405,7 +407,7 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
                   : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
               }`}
             >
-              Circular
+              {t('graphViewer.circular')}
             </button>
           </div>
         </div>
@@ -415,7 +417,7 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
       <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-sm border border-slate-200 z-10 flex items-center gap-2">
         <div className={`w-2 h-2 rounded-full ${selectedNodes.size > 0 ? 'bg-blue-500' : 'bg-green-500'} animate-pulse`}></div>
         <span className="text-xs font-semibold text-slate-700">
-          {selectedNodes.size > 0 ? `${selectedNodes.size} Selected` : `${nodes.length} Nodes`}
+          {selectedNodes.size > 0 ? `${selectedNodes.size} ${t('graphViewer.selected')}` : `${nodes.length} ${t('graphViewer.nodes')}`}
         </span>
       </div>
 
@@ -452,7 +454,7 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
       {/* Legend */}
       {paneState !== 'minimized' && (
         <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-sm rounded-lg shadow-sm border border-slate-200 z-10 p-2">
-          <div className="text-xs text-slate-600 mb-2 font-semibold">Node Types</div>
+          <div className="text-xs text-slate-600 mb-2 font-semibold">{t('graphViewer.nodeTypes')}</div>
           <div className="flex flex-col gap-1">
             {['Project', 'Level', 'Space', 'Element', 'System'].map(type => (
               <div key={type} className="flex items-center gap-2">
@@ -470,7 +472,7 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
       {/* Minimized state indicator */}
       {paneState === 'minimized' && (
         <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-20">
-          <div className="text-white text-sm">Graph Viewer Minimized</div>
+          <div className="text-white text-sm">{t('graphViewer.minimized')}</div>
         </div>
       )}
 
@@ -478,9 +480,9 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
       {typeof window !== 'undefined' && !(window as any).cytoscape && (
         <div className="absolute inset-0 flex items-center justify-center bg-slate-100">
           <div className="text-center p-6">
-            <div className="text-slate-600 text-lg mb-2">Cytoscape.js Not Loaded</div>
+            <div className="text-slate-600 text-lg mb-2">{t('graphViewer.notLoaded')}</div>
             <div className="text-slate-400 text-sm">
-              Please install: npm install cytoscape
+              {t('graphViewer.installMessage')}
             </div>
           </div>
         </div>

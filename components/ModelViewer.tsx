@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useCallback } from 'react';
 import { PaneState, HighlightStyle } from '../types';
+import { useLanguage } from '../contexts/LanguageProvider';
 
 // BIM Element interface
 export interface BIMElement {
@@ -41,6 +42,7 @@ const ModelViewer: React.FC<ModelViewerProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const { t } = useLanguage();
 
   // Handle element click
   const handleElementClick = useCallback((elementId: string) => {
@@ -208,8 +210,8 @@ const ModelViewer: React.FC<ModelViewerProps> = ({
       {!speckleUrl && (
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-center">
-            <div className="text-slate-400 text-lg mb-2">3D Model Viewer</div>
-            <div className="text-slate-300 text-sm">No model loaded</div>
+            <div className="text-slate-400 text-lg mb-2">{t('modelViewer.title')}</div>
+            <div className="text-slate-300 text-sm">{t('modelViewer.noModel')}</div>
           </div>
         </div>
       )}
@@ -221,7 +223,7 @@ const ModelViewer: React.FC<ModelViewerProps> = ({
       <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-sm border border-slate-200 z-10 flex items-center gap-2">
         <div className={`w-2 h-2 rounded-full ${selectedElements.size > 0 ? 'bg-blue-500' : 'bg-green-500'} animate-pulse`}></div>
         <span className="text-xs font-semibold text-slate-700">
-          {selectedElements.size > 0 ? `${selectedElements.size} Selected` : 'Live Model'}
+          {selectedElements.size > 0 ? `${selectedElements.size} ${t('modelViewer.selected')}` : t('modelViewer.liveModel')}
         </span>
       </div>
 
@@ -254,7 +256,7 @@ const ModelViewer: React.FC<ModelViewerProps> = ({
       {/* Minimized state indicator */}
       {paneState === 'minimized' && (
         <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-20">
-          <div className="text-white text-sm">Model Viewer Minimized</div>
+          <div className="text-white text-sm">{t('modelViewer.minimized')}</div>
         </div>
       )}
     </div>

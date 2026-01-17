@@ -1,0 +1,101 @@
+{
+  "header": {
+    "title": "智能BIM",
+    "projects": "项目",
+    "analytics": "分析",
+    "reports": "报告",
+    "user": "建筑师 Doe"
+  },
+  "modelViewer": {
+    "title": "3D 模型查看器",
+    "noModel": "未加载模型",
+    "selected": "已选择",
+    "liveModel": "实时模型",
+    "minimized": "模型查看器已最小化"
+  },
+  "graphViewer": {
+    "title": "图谱查看器",
+    "layout": "布局",
+    "hierarchy": "层级",
+    "force": "力导向",
+    "circular": "圆形",
+    "selected": "已选择",
+    "nodes": "节点",
+    "nodeTypes": "节点类型",
+    "minimized": "图谱查看器已最小化",
+    "notLoaded": "Cytoscape.js 未加载",
+    "installMessage": "请安装: npm install cytoscape"
+  },
+  "voiceCommander": {
+    "processing": "正在处理命令...",
+    "tapToSpeak": "点击说话",
+    "notSupported": "您的浏览器不支持语音识别功能，请使用 Chrome 或 Edge 浏览器。",
+    "transcript": "命令记录",
+    "command": "命令",
+    "response": "响应",
+    "clear": "清空全部"
+  },
+  "languages": {
+    "english": "English",
+    "chinese": "中文"
+  },
+  "controlPanel": {
+    "title": "AI 指挥官",
+    "poweredBy": "由 Gemini 2.5 提供支持",
+    "elements": "元素",
+    "greeting": "你好！我是你的 BIM 助手。描述你想要查看的内容，我会为你生成控件。",
+    "aiTools": "AI 工具",
+    "analyzeStructure": "分析结构",
+    "mepCheck": "MEP 检查",
+    "placeholder": "请 AI 过滤（例如：'显示梁'）...",
+    "toggleMicrophone": "切换麦克风",
+    "speechNotSupported": "此浏览器不支持语音识别。",
+    "selectedPrefix": "已选择：",
+    "actionApplied": "已应用操作 '{{label}}'。",
+    "filterApplied": "我已应用过滤器：{{label}}",
+    "errorConnecting": "连接 AI 服务时遇到错误。请检查您的 API 密钥。"
+  },
+  "projectModal": {
+    "title": "项目管理",
+    "manageProjects": "管理项目",
+    "manageBIMProjects": "管理您的 BIM 项目和 Speckle 流",
+    "addNewProject": "添加新项目",
+    "addSpeckleProject": "通过输入流 URL 添加新的 Speckle 项目",
+    "noProjects": "未找到项目",
+    "addFirstProject": "开始添加您的第一个项目",
+    "current": "当前",
+    "switchToProject": "切换到项目",
+    "delete": "删除",
+    "projectName": "项目名称",
+    "projectNamePlaceholder": "输入项目名称",
+    "speckleUrl": "Speckle 流 URL",
+    "speckleUrlPlaceholder": "https://app.speckle.systems/projects/...",
+    "copyEmbedUrl": "从您的 Speckle 项目中复制嵌入 URL",
+    "projectDescription": "项目描述",
+    "optional": "可选",
+    "projectDescriptionPlaceholder": "为这个项目添加描述（可选）",
+    "addProject": "添加项目",
+    "reset": "重置",
+    "editProject": "编辑项目",
+    "form": {
+      "name": "项目名称",
+      "speckleUrl": "Speckle 流 URL"
+    },
+    "button": {
+      "save": "保存",
+      "cancel": "取消",
+      "delete": "删除",
+      "confirmDelete": "确认删除",
+      "close": "关闭"
+    },
+    "errors": {
+      "nameRequired": "项目名称为必填项",
+      "urlRequired": "Speckle URL 为必填项",
+      "invalidUrl": "请输入有效的 Speckle URL"
+    },
+    "confirm": {
+      "deleteProject": "确定要删除这个项目吗？",
+      "deleteWarning": "此操作无法撤销。"
+    }
+  }
+}

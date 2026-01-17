@@ -1,5 +1,6 @@
 import React from 'react';
 import { PaneType, PaneState } from '../types';
+import { useLanguage } from '../contexts/LanguageProvider';
 
 interface PaneHeaderProps {
   title: string;
@@ -22,6 +23,12 @@ export const PaneHeader: React.FC<PaneHeaderProps> = ({
   const showMaximizeButton = paneState === 'normal';
   const showRestoreButton = paneState === 'maximized' || paneState === 'minimized';
   const showMinimizeButton = paneState === 'normal';
+  const { t, language } = useLanguage();
+  
+  // Get localized button titles based on language
+  const minimizeTitle = language === 'en' ? 'Minimize' : '最小化';
+  const maximizeTitle = language === 'en' ? 'Maximize' : '最大化';
+  const restoreTitle = language === 'en' ? 'Restore' : '恢复';
 
   return (
     <div className="flex items-center justify-between px-4 py-2 bg-slate-100 border-b border-slate-200">
@@ -35,8 +42,8 @@ export const PaneHeader: React.FC<PaneHeaderProps> = ({
           <button
             onClick={onMinimize}
             className="p-1.5 hover:bg-slate-200 rounded transition-colors"
-            title="最小化"
-            aria-label={`最小化 ${title}`}
+            title={minimizeTitle}
+            aria-label={`${minimizeTitle} ${title}`}
           >
             <svg
               className="w-4 h-4 text-slate-600"
@@ -59,8 +66,8 @@ export const PaneHeader: React.FC<PaneHeaderProps> = ({
           <button
             onClick={onMaximize}
             className="p-1.5 hover:bg-slate-200 rounded transition-colors"
-            title="最大化"
-            aria-label={`最大化 ${title}`}
+            title={maximizeTitle}
+            aria-label={`${maximizeTitle} ${title}`}
           >
             <svg
               className="w-4 h-4 text-slate-600"
@@ -83,8 +90,8 @@ export const PaneHeader: React.FC<PaneHeaderProps> = ({
           <button
             onClick={onRestore}
             className="p-1.5 hover:bg-slate-200 rounded transition-colors"
-            title="恢复"
-            aria-label={`恢复 ${title}`}
+            title={restoreTitle}
+            aria-label={`${restoreTitle} ${title}`}
           >
             <svg
               className="w-4 h-4 text-slate-600"
