@@ -25,6 +25,9 @@ const App: React.FC = () => {
   const [allElements] = useState<MockBIMElement[]>(generateMockElements(500));
   const [activeElements, setActiveElements] = useState<MockBIMElement[]>([]);
   const [currentFilter, setCurrentFilter] = useState<BIMQueryResponse | null>(null);
+  const [currentSpeckleUrl, setCurrentSpeckleUrl] = useState<string>(
+    "https://app.speckle.systems/projects/0876633ea1/models/1e05934141?embedToken=3d3c2e0ab4878e7d01b16a1608e78e03848887eed4#embed=%7B%22isEnabled%22%3Atrue%7D"
+  );
 
   useEffect(() => {
     setActiveElements(allElements);
@@ -58,7 +61,10 @@ const App: React.FC = () => {
   return (
     <LayoutStateProvider>
       <div className="flex flex-col h-screen bg-slate-50 overflow-hidden">
-        <DashboardHeader />
+        <DashboardHeader 
+          currentSpeckleUrl={currentSpeckleUrl}
+          onUrlChange={setCurrentSpeckleUrl}
+        />
         
         <main className="flex-1 flex overflow-hidden">
           {/* Left Side: Split Pane Container (70-75% width) */}
@@ -68,7 +74,7 @@ const App: React.FC = () => {
               bottomPaneTitle="图谱可视化"
               topPane={
                 <div className="relative w-full h-full">
-                  <SpeckleViewer embedUrl="https://app.speckle.systems/projects/0876633ea1/models/1e05934141?embedToken=3d3c2e0ab4878e7d01b16a1608e78e03848887eed4#embed=%7B%22isEnabled%22%3Atrue%7D" />
+                  <SpeckleViewer embedUrl={currentSpeckleUrl} />
                   
                   {/* Status Overlay (Top Left) */}
                   <div className="absolute top-4 left-4 z-20 flex flex-col gap-2 pointer-events-none">
