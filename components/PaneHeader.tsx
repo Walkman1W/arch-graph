@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLanguage } from '../contexts/LanguageContext';
 import { PaneType, PaneState } from '../types';
 
 interface PaneHeaderProps {
@@ -18,25 +19,23 @@ export const PaneHeader: React.FC<PaneHeaderProps> = ({
   onMinimize,
   onRestore,
 }) => {
-  // Determine which buttons to show based on current state
+  const { t } = useLanguage();
+  
   const showMaximizeButton = paneState === 'normal';
   const showRestoreButton = paneState === 'maximized' || paneState === 'minimized';
   const showMinimizeButton = paneState === 'normal';
 
   return (
     <div className="flex items-center justify-between px-4 py-2 bg-slate-100 border-b border-slate-200">
-      {/* Title */}
       <h3 className="text-sm font-semibold text-slate-700">{title}</h3>
 
-      {/* Control Buttons */}
       <div className="flex items-center gap-1">
-        {/* Minimize Button */}
         {showMinimizeButton && (
           <button
             onClick={onMinimize}
             className="p-1.5 hover:bg-slate-200 rounded transition-colors"
-            title="最小化"
-            aria-label={`最小化 ${title}`}
+            title={t.pane.minimize}
+            aria-label={`${t.pane.minimize} ${title}`}
           >
             <svg
               className="w-4 h-4 text-slate-600"
@@ -54,13 +53,12 @@ export const PaneHeader: React.FC<PaneHeaderProps> = ({
           </button>
         )}
 
-        {/* Maximize Button */}
         {showMaximizeButton && (
           <button
             onClick={onMaximize}
             className="p-1.5 hover:bg-slate-200 rounded transition-colors"
-            title="最大化"
-            aria-label={`最大化 ${title}`}
+            title={t.pane.maximize}
+            aria-label={`${t.pane.maximize} ${title}`}
           >
             <svg
               className="w-4 h-4 text-slate-600"
@@ -78,13 +76,12 @@ export const PaneHeader: React.FC<PaneHeaderProps> = ({
           </button>
         )}
 
-        {/* Restore Button */}
         {showRestoreButton && (
           <button
             onClick={onRestore}
             className="p-1.5 hover:bg-slate-200 rounded transition-colors"
-            title="恢复"
-            aria-label={`恢复 ${title}`}
+            title={t.pane.restore}
+            aria-label={`${t.pane.restore} ${title}`}
           >
             <svg
               className="w-4 h-4 text-slate-600"

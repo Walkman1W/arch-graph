@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useCallback, useState } from 'react';
+import { useLanguage } from '../contexts/LanguageContext';
 import { PaneState, HighlightStyle } from '../types';
 
 // Graph data types
@@ -41,8 +42,9 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
   paneState,
   layoutMode = 'hierarchy',
 }) => {
+  const { t } = useLanguage();
   const containerRef = useRef<HTMLDivElement>(null);
-  const cyRef = useRef<any>(null); // Cytoscape instance
+  const cyRef = useRef<any>(null);
   const [currentLayout, setCurrentLayout] = useState<LayoutMode>(layoutMode);
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
 
@@ -375,7 +377,7 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
       {/* Layout controls */}
       {paneState !== 'minimized' && (
         <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm rounded-lg shadow-sm border border-slate-200 z-10 p-2">
-          <div className="text-xs text-slate-600 mb-2 font-semibold">Layout</div>
+          <div className="text-xs text-slate-600 mb-2 font-semibold">{t.graph.layout}</div>
           <div className="flex flex-col gap-1">
             <button
               onClick={() => changeLayout('hierarchy')}
@@ -385,7 +387,7 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
                   : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
               }`}
             >
-              Hierarchy
+              {t.graph.layouts.hierarchical}
             </button>
             <button
               onClick={() => changeLayout('force')}
@@ -395,7 +397,7 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
                   : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
               }`}
             >
-              Force
+              {t.graph.layouts.force}
             </button>
             <button
               onClick={() => changeLayout('circular')}
@@ -405,21 +407,19 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
                   : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
               }`}
             >
-              Circular
+              {t.graph.layouts.circular}
             </button>
           </div>
         </div>
       )}
 
-      {/* Status badge */}
       <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-sm border border-slate-200 z-10 flex items-center gap-2">
         <div className={`w-2 h-2 rounded-full ${selectedNodes.size > 0 ? 'bg-blue-500' : 'bg-green-500'} animate-pulse`}></div>
         <span className="text-xs font-semibold text-slate-700">
-          {selectedNodes.size > 0 ? `${selectedNodes.size} Selected` : `${nodes.length} Nodes`}
+          {selectedNodes.size > 0 ? `${selectedNodes.size} ${t.common.selected}` : `${nodes.length} ${t.common.nodes}`}
         </span>
       </div>
 
-      {/* Node info */}
       {selectedNodes.size > 0 && (
         <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-2 rounded-lg shadow-sm border border-slate-200 z-10 max-w-xs">
           <div className="text-xs text-slate-600">
@@ -449,10 +449,9 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
         </div>
       )}
 
-      {/* Legend */}
       {paneState !== 'minimized' && (
         <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-sm rounded-lg shadow-sm border border-slate-200 z-10 p-2">
-          <div className="text-xs text-slate-600 mb-2 font-semibold">Node Types</div>
+          <div className="text-xs text-slate-600 mb-2 font-semibold">{t.graph.nodeInfo}</div>
           <div className="flex flex-col gap-1">
             {['Project', 'Level', 'Space', 'Element', 'System'].map(type => (
               <div key={type} className="flex items-center gap-2">
@@ -467,10 +466,9 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
         </div>
       )}
 
-      {/* Minimized state indicator */}
       {paneState === 'minimized' && (
         <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-20">
-          <div className="text-white text-sm">Graph Viewer Minimized</div>
+          <div className="text-white text-sm">{t.graph.title} {t.pane.minimize}</div>
         </div>
       )}
 
