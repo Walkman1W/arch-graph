@@ -116,3 +116,21 @@ export interface BIMElement {
   };
   properties: Record<string, any>;
 }
+
+// Project Types
+export interface Project {
+  id: string;
+  name: string;
+  speckleUrl: string;
+  thumbnailUrl?: string;
+  createdAt: Date;
+  updatedAt: Date;
+  description?: string;
+}
+
+export interface ProjectModalState {
+  isOpen: boolean;
+  isAdding: boolean;
+  newProjectUrl: string;
+  newProjectName: string;
+}
