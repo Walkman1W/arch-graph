@@ -1,10 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import DashboardHeader from './components/DashboardHeader';
 import SpeckleViewer from './components/SpeckleViewer';
 import ControlPanel from './components/ControlPanel';
+import ProjectManager from './components/ProjectManager';
 import { LayoutStateProvider } from './contexts/LayoutStateProvider';
 import { SplitPaneContainer } from './components/SplitPaneContainer';
-import { BIMQueryResponse, BIMOperation, MockBIMElement } from './types';
+import { BIMQueryResponse, BIMOperation, MockBIMElement, Project } from './types';
+import { projectService } from './services/projectService';
+import { speckleUtils } from './utils/speckleUtils';
 
 // Mock data generator for simulation
 const generateMockElements = (count: number): MockBIMElement[] => {
@@ -25,10 +28,36 @@ const App: React.FC = () => {
   const [allElements] = useState<MockBIMElement[]>(generateMockElements(500));
   const [activeElements, setActiveElements] = useState<MockBIMElement[]>([]);
   const [currentFilter, setCurrentFilter] = useState<BIMQueryResponse | null>(null);
+  
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [activeProject, setActiveProject] = useState<Project | null>(null);
+  const [isProjectManagerOpen, setIsProjectManagerOpen] = useState(false);
 
   useEffect(() => {
     setActiveElements(allElements);
   }, [allElements]);
+
+  useEffect(() => {
+    const projectState = projectService.loadProjects();
+    setProjects(projectState.projects);
+    const active = projectState.projects.find(p => p.isActive) || null;
+    setActiveProject(active);
+  }, []);
+
+  const handleProjectsChange = useCallback(() => {
+    const projectState = projectService.loadProjects();
+    setProjects(projectState.projects);
+    const active = projectState.projects.find(p => p.isActive) || null;
+    setActiveProject(active);
+  }, []);
+
+  const handleOpenProjectManager = useCallback(() => {
+    setIsProjectManagerOpen(true);
+  }, []);
+
+  const handleCloseProjectManager = useCallback(() => {
+    setIsProjectManagerOpen(false);
+  }, []);
 
   const handleCommand = (response: BIMQueryResponse) => {
     setCurrentFilter(response);
@@ -58,7 +87,18 @@ const App: React.FC = () => {
   return (
     <LayoutStateProvider>
       <div className="flex flex-col h-screen bg-slate-50 overflow-hidden">
-        <DashboardHeader />
+        <DashboardHeader 
+          projectName={activeProject?.name}
+          onOpenProjectManager={handleOpenProjectManager}
+        />
+        
+        {isProjectManagerOpen && (
+          <ProjectManager
+            isOpen={isProjectManagerOpen}
+            onClose={handleCloseProjectManager}
+            onProjectsChange={handleProjectsChange}
+          />
+        )}
         
         <main className="flex-1 flex overflow-hidden">
           {/* Left Side: Split Pane Container (70-75% width) */}
@@ -68,7 +108,13 @@ const App: React.FC = () => {
               bottomPaneTitle="图谱可视化"
               topPane={
                 <div className="relative w-full h-full">
-                  <SpeckleViewer embedUrl="https://app.speckle.systems/projects/0876633ea1/models/1e05934141?embedToken=3d3c2e0ab4878e7d01b16a1608e78e03848887eed4#embed=%7B%22isEnabled%22%3Atrue%7D" />
+                  <SpeckleViewer 
+                    embedUrl={
+                      activeProject?.speckleUrl 
+                        ? speckleUtils.getEmbedUrl(activeProject.speckleUrl)
+                        : "https://app.speckle.systems/projects/0876633ea1/models/1e05934141?embedToken=3d3c2e0ab4878e7d01b16a1608e78e03848887eed4#embed=%7B%22isEnabled%22%3Atrue%7D"
+                    } 
+                  />
                   
                   {/* Status Overlay (Top Left) */}
                   <div className="absolute top-4 left-4 z-20 flex flex-col gap-2 pointer-events-none">
