@@ -4,7 +4,7 @@ import SpeckleViewer from './components/SpeckleViewer';
 import ControlPanel from './components/ControlPanel';
 import { LayoutStateProvider } from './contexts/LayoutStateProvider';
 import { SplitPaneContainer } from './components/SplitPaneContainer';
-import { BIMQueryResponse, BIMOperation, MockBIMElement } from './types';
+import { BIMQueryResponse, BIMOperation, MockBIMElement, SpeckleProject } from './types';
 
 // Mock data generator for simulation
 const generateMockElements = (count: number): MockBIMElement[] => {
@@ -25,6 +25,10 @@ const App: React.FC = () => {
   const [allElements] = useState<MockBIMElement[]>(generateMockElements(500));
   const [activeElements, setActiveElements] = useState<MockBIMElement[]>([]);
   const [currentFilter, setCurrentFilter] = useState<BIMQueryResponse | null>(null);
+  const [currentProject, setCurrentProject] = useState<SpeckleProject | null>(null);
+  const [speckleEmbedUrl, setSpeckleEmbedUrl] = useState<string>(
+    "https://app.speckle.systems/projects/0876633ea1/models/1e05934141?embedToken=3d3c2e0ab4878e7d01b16a1608e78e03848887eed4#embed=%7B%22isEnabled%22%3Atrue%7D"
+  );
 
   useEffect(() => {
     setActiveElements(allElements);
@@ -55,23 +59,40 @@ const App: React.FC = () => {
     setActiveElements(filtered);
   };
 
+  const handleProjectSelect = (project: SpeckleProject) => {
+    setCurrentProject(project);
+    // 构建嵌入URL，添加embedToken参数
+    const baseUrl = project.speckleUrl;
+    const embedUrl = `${baseUrl}?embedToken=3d3c2e0ab4878e7d01b16a1608e78e03848887eed4#embed=%7B%22isEnabled%22%3Atrue%7D`;
+    setSpeckleEmbedUrl(embedUrl);
+  };
+
   return (
     <LayoutStateProvider>
       <div className="flex flex-col h-screen bg-slate-50 overflow-hidden">
-        <DashboardHeader />
+        <DashboardHeader onProjectSelect={handleProjectSelect} currentProjectId={currentProject?.id || null} />
         
         <main className="flex-1 flex overflow-hidden">
           {/* Left Side: Split Pane Container (70-75% width) */}
           <div className="flex-[0.7] lg:flex-[0.75] min-w-0">
             <SplitPaneContainer
-              topPaneTitle="3D 模型查看器"
+              topPaneTitle={currentProject ? `3D 模型查看器 - ${currentProject.name}` : "3D 模型查看器"}
               bottomPaneTitle="图谱可视化"
               topPane={
                 <div className="relative w-full h-full">
-                  <SpeckleViewer embedUrl="https://app.speckle.systems/projects/0876633ea1/models/1e05934141?embedToken=3d3c2e0ab4878e7d01b16a1608e78e03848887eed4#embed=%7B%22isEnabled%22%3Atrue%7D" />
+                  <SpeckleViewer embedUrl={speckleEmbedUrl} />
                   
                   {/* Status Overlay (Top Left) */}
                   <div className="absolute top-4 left-4 z-20 flex flex-col gap-2 pointer-events-none">
+                    {currentProject && (
+                      <div className="bg-white/90 backdrop-blur shadow-sm border border-slate-200 rounded-lg px-4 py-2 flex items-center gap-3 pointer-events-auto">
+                        <div className={`w-2 h-2 rounded-full ${currentProject.isActive ? 'bg-green-500' : 'bg-slate-300'}`}></div>
+                        <div>
+                          <p className="text-xs text-slate-500 uppercase font-bold tracking-wider">当前项目</p>
+                          <p className="text-sm font-semibold text-slate-800">{currentProject.name}</p>
+                        </div>
+                      </div>
+                    )}
                     <div className="bg-white/90 backdrop-blur shadow-sm border border-slate-200 rounded-lg px-4 py-2 flex items-center gap-3 pointer-events-auto">
                       <div className={`w-2 h-2 rounded-full ${activeElements.length < allElements.length ? 'bg-blue-500' : 'bg-slate-300'}`}></div>
                       <div>

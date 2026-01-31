@@ -116,3 +116,45 @@ export interface BIMElement {
   };
   properties: Record<string, any>;
 }
+
+// Project Types
+export interface SpeckleProject {
+  id: string;
+  name: string;
+  description?: string;
+  speckleUrl: string;
+  thumbnailUrl?: string;
+  createdAt: Date;
+  updatedAt: Date;
+  isActive: boolean;
+}
+
+export interface ProjectModalState {
+  isOpen: boolean;
+  projects: SpeckleProject[];
+  isLoading: boolean;
+  error?: string;
+}
+
+export interface AddProjectFormState {
+  isOpen: boolean;
+  name: string;
+  speckleUrl: string;
+  description: string;
+  errors: Record<string, string>;
+}
+
+export interface EditProjectFormState {
+  isOpen: boolean;
+  projectId: string | null;
+  name: string;
+  speckleUrl: string;
+  description: string;
+  errors: Record<string, string>;
+}
+
+export interface DeleteConfirmState {
+  isOpen: boolean;
+  projectId: string | null;
+  projectName: string;
+}
