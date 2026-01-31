@@ -44,6 +44,7 @@ export interface Message {
 }
 
 export type GestureType = 'NONE' | 'ROTATE_LEFT' | 'ROTATE_RIGHT' | 'WAVE';
+export type Language = 'zh' | 'en';
 
 // Layout State Types
 export type PaneState = 'normal' | 'maximized' | 'minimized';

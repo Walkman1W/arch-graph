@@ -4,6 +4,7 @@ import SpeckleViewer from './components/SpeckleViewer';
 import ControlPanel from './components/ControlPanel';
 import ProjectModal from './components/ProjectModal';
 import { LayoutStateProvider } from './contexts/LayoutStateProvider';
+import { LanguageProvider, useLanguage } from './contexts/LanguageProvider';
 import { SplitPaneContainer } from './components/SplitPaneContainer';
 import { BIMQueryResponse, BIMOperation, MockBIMElement, Project, ProjectModalState, ProjectFormData } from './types';
 
@@ -11,7 +12,7 @@ const DEFAULT_SPECKLE_URL = 'https://app.speckle.systems/projects/0876633ea1/mod
 
 const STORAGE_KEY = 'smartbim_projects';
 
-const loadProjectsFromStorage = (): Project[] => {
+const loadProjectsFromStorage = (defaultName: string, defaultDescription: string): Project[] => {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
@@ -23,9 +24,9 @@ const loadProjectsFromStorage = (): Project[] => {
   
   const defaultProject: Project = {
     id: 'project-default',
-    name: '示例建筑模型',
+    name: defaultName,
     speckleUrl: DEFAULT_SPECKLE_URL,
-    description: '默认示例项目，展示基本的建筑模型结构',
+    description: defaultDescription,
     thumbnail: undefined,
     createdAt: Date.now(),
     isActive: true,
@@ -57,7 +58,9 @@ const generateMockElements = (count: number): MockBIMElement[] => {
   }));
 };
 
-const App: React.FC = () => {
+// 内部组件，使用语言上下文
+const AppContent: React.FC = () => {
+  const { t } = useLanguage();
   const [allElements] = useState<MockBIMElement[]>(generateMockElements(500));
   const [activeElements, setActiveElements] = useState<MockBIMElement[]>([]);
   const [currentFilter, setCurrentFilter] = useState<BIMQueryResponse | null>(null);
@@ -73,9 +76,12 @@ const App: React.FC = () => {
   }, [allElements]);
 
   useEffect(() => {
-    const storedProjects = loadProjectsFromStorage();
+    const storedProjects = loadProjectsFromStorage(
+      t('project.defaultName'),
+      t('project.defaultDescription')
+    );
     setProjects(storedProjects);
-  }, []);
+  }, [t]);
 
   const handleCommand = (response: BIMQueryResponse) => {
     setCurrentFilter(response);
@@ -150,84 +156,93 @@ const App: React.FC = () => {
   const currentProject = projects.find(p => p.isActive);
 
   return (
-    <LayoutStateProvider>
-      <div className="flex flex-col h-screen bg-slate-50 overflow-hidden">
-        <DashboardHeader 
-          onOpenProjects={handleOpenProjects}
-          currentProjectName={currentProject?.name}
-        />
-        
-        <main className="flex-1 flex overflow-hidden">
-          {/* Left Side: Split Pane Container (70-75% width) */}
-          <div className="flex-[0.7] lg:flex-[0.75] min-w-0">
-            <SplitPaneContainer
-              topPaneTitle="3D 模型查看器"
-              bottomPaneTitle="图谱可视化"
-              topPane={
-                <div className="relative w-full h-full">
-                  <SpeckleViewer embedUrl={currentProject?.speckleUrl || DEFAULT_SPECKLE_URL} />
-                  
-                  {/* Status Overlay (Top Left) */}
-                  <div className="absolute top-4 left-4 z-20 flex flex-col gap-2 pointer-events-none">
-                    <div className="bg-white/90 backdrop-blur shadow-sm border border-slate-200 rounded-lg px-4 py-2 flex items-center gap-3 pointer-events-auto">
-                      <div className={`w-2 h-2 rounded-full ${activeElements.length < allElements.length ? 'bg-blue-500' : 'bg-slate-300'}`}></div>
-                      <div>
-                        <p className="text-xs text-slate-500 uppercase font-bold tracking-wider">Visibility</p>
-                        <p className="text-sm font-semibold text-slate-800">{activeElements.length} / {allElements.length} Elements</p>
-                      </div>
+    <div className="flex flex-col h-screen bg-slate-50 overflow-hidden">
+      <DashboardHeader 
+        onOpenProjects={handleOpenProjects}
+        currentProjectName={currentProject?.name}
+      />
+      
+      <main className="flex-1 flex overflow-hidden">
+        {/* Left Side: Split Pane Container (70-75% width) */}
+        <div className="flex-[0.7] lg:flex-[0.75] min-w-0">
+          <SplitPaneContainer
+            topPaneTitle={t('modelViewer.title')}
+            bottomPaneTitle={t('graphViewer.title')}
+            topPane={
+              <div className="relative w-full h-full">
+                <SpeckleViewer embedUrl={currentProject?.speckleUrl || DEFAULT_SPECKLE_URL} />
+                
+                {/* Status Overlay (Top Left) */}
+                <div className="absolute top-4 left-4 z-20 flex flex-col gap-2 pointer-events-none">
+                  <div className="bg-white/90 backdrop-blur shadow-sm border border-slate-200 rounded-lg px-4 py-2 flex items-center gap-3 pointer-events-auto">
+                    <div className={`w-2 h-2 rounded-full ${activeElements.length < allElements.length ? 'bg-blue-500' : 'bg-slate-300'}`}></div>
+                    <div>
+                      <p className="text-xs text-slate-500 uppercase font-bold tracking-wider">{t('modelViewer.visibility')}</p>
+                      <p className="text-sm font-semibold text-slate-800">{activeElements.length} / {allElements.length} {t('modelViewer.elements')}</p>
                     </div>
                   </div>
-
-                  {/* Current Active Filter Tags (Bottom Left) */}
-                  {currentFilter && currentFilter.operation !== 'RESET' && (
-                    <div className="absolute bottom-4 left-4 z-20 flex flex-wrap gap-2 max-w-md pointer-events-none">
-                      {currentFilter.operation && (
-                        <span className="px-3 py-1 bg-slate-900 text-white text-xs font-mono rounded-md shadow-lg">
-                          CMD: {currentFilter.operation}
-                        </span>
-                      )}
-                      {currentFilter.category && (
-                        <span className="px-3 py-1 bg-blue-600 text-white text-xs font-semibold rounded-md shadow-lg">
-                          {currentFilter.category}
-                        </span>
-                      )}
-                    </div>
-                  )}
                 </div>
-              }
-              bottomPane={
-                <div className="w-full h-full bg-gradient-to-br from-green-50 to-green-100 flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="text-6xl mb-4">🕸️</div>
-                    <h2 className="text-2xl font-bold text-slate-700 mb-2">图谱可视化</h2>
-                    <p className="text-slate-600">Cytoscape.js 图谱将在任务 6 中实现</p>
+
+                {/* Current Active Filter Tags (Bottom Left) */}
+                {currentFilter && currentFilter.operation !== 'RESET' && (
+                  <div className="absolute bottom-4 left-4 z-20 flex flex-wrap gap-2 max-w-md pointer-events-none">
+                    {currentFilter.operation && (
+                      <span className="px-3 py-1 bg-slate-900 text-white text-xs font-mono rounded-md shadow-lg">
+                        CMD: {currentFilter.operation}
+                      </span>
+                    )}
+                    {currentFilter.category && (
+                      <span className="px-3 py-1 bg-blue-600 text-white text-xs font-semibold rounded-md shadow-lg">
+                        {currentFilter.category}
+                      </span>
+                    )}
                   </div>
+                )}
+              </div>
+            }
+            bottomPane={
+              <div className="w-full h-full bg-gradient-to-br from-green-50 to-green-100 flex items-center justify-center">
+                <div className="text-center">
+                  <div className="text-6xl mb-4">🕸️</div>
+                  <h2 className="text-2xl font-bold text-slate-700 mb-2">{t('graphViewer.title')}</h2>
+                  <p className="text-slate-600">{t('graphViewer.description')}</p>
                 </div>
-              }
-            />
-          </div>
+              </div>
+            }
+          />
+        </div>
 
-          {/* Right Side: Control Panel (25-30% width) */}
-          <div className="flex-[0.3] lg:flex-[0.25] min-w-0">
-            <ControlPanel 
-              onCommandProcessed={handleCommand}
-              filteredCount={activeElements.length}
-            />
-          </div>
-        </main>
+        {/* Right Side: Control Panel (25-30% width) */}
+        <div className="flex-[0.3] lg:flex-[0.25] min-w-0">
+          <ControlPanel 
+            onCommandProcessed={handleCommand}
+            filteredCount={activeElements.length}
+          />
+        </div>
+      </main>
 
-        {/* Project Modal */}
-        <ProjectModal
-          modalState={modalState}
-          projects={projects}
-          onClose={handleCloseModal}
-          onAddProject={handleAddProject}
-          onDeleteProject={handleDeleteProject}
-          onSelectProject={handleSelectProject}
-          onSwitchMode={handleSwitchMode}
-        />
-      </div>
-    </LayoutStateProvider>
+      {/* Project Modal */}
+      <ProjectModal
+        modalState={modalState}
+        projects={projects}
+        onClose={handleCloseModal}
+        onAddProject={handleAddProject}
+        onDeleteProject={handleDeleteProject}
+        onSelectProject={handleSelectProject}
+        onSwitchMode={handleSwitchMode}
+      />
+    </div>
+  );
+};
+
+// 主App组件，包装所有提供程序
+const App: React.FC = () => {
+  return (
+    <LanguageProvider>
+      <LayoutStateProvider>
+        <AppContent />
+      </LayoutStateProvider>
+    </LanguageProvider>
   );
 };
 

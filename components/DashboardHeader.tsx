@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLanguage } from '../contexts/LanguageProvider';
 
 interface DashboardHeaderProps {
   onOpenProjects: () => void;
@@ -6,6 +7,11 @@ interface DashboardHeaderProps {
 }
 
 const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onOpenProjects, currentProjectName }) => {
+  const { language, setLanguage, t } = useLanguage();
+  
+  const toggleLanguage = () => {
+    setLanguage(language === 'zh' ? 'en' : 'zh');
+  };
   return (
     <header className="bg-white border-b border-slate-200 h-16 flex items-center px-6 justify-between flex-shrink-0 z-20">
       <div className="flex items-center gap-3">
@@ -24,17 +30,30 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onOpenProjects, curre
             <svg className="w-5 h-5 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
             </svg>
-            <span>Projects</span>
+            <span>{t('header.projects')}</span>
             {currentProjectName && (
               <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full">
                 {currentProjectName}
               </span>
             )}
           </button>
-          <span className="hover:text-blue-600 cursor-pointer transition-colors">Analytics</span>
-          <span className="hover:text-blue-600 cursor-pointer transition-colors">Reports</span>
+          <span className="hover:text-blue-600 cursor-pointer transition-colors">{t('header.analytics')}</span>
+          <span className="hover:text-blue-600 cursor-pointer transition-colors">{t('header.reports')}</span>
         </div>
         <div className="w-px h-6 bg-slate-200 hidden md:block"></div>
+        
+        {/* Language Toggle Button */}
+        <button
+          onClick={toggleLanguage}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors"
+          title={language === 'zh' ? 'Switch to English' : '切换到中文'}
+        >
+          <span className="text-lg">{language === 'zh' ? '🇺🇸' : '🇨🇳'}</span>
+          <span className="text-sm font-medium text-slate-700 hidden md:block">
+            {language === 'zh' ? 'EN' : '中文'}
+          </span>
+        </button>
+        
         <div className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-1.5 rounded-lg transition-colors">
           <img 
             src="https://picsum.photos/32/32" 

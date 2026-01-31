@@ -1,6 +1,7 @@
 import React, { useRef, useState, useCallback, useEffect } from 'react';
 import { useLayoutState } from '../contexts/LayoutStateProvider';
 import { PaneHeader } from './PaneHeader';
+import { useLanguage } from '../contexts/LanguageProvider';
 
 interface SplitPaneContainerProps {
   topPane: React.ReactNode;
@@ -21,6 +22,7 @@ export const SplitPaneContainer: React.FC<SplitPaneContainerProps> = ({
   minPaneHeight = 0.2,
   maxPaneHeight = 0.8,
 }) => {
+  const { t } = useLanguage();
   const containerRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const { 
@@ -147,7 +149,7 @@ export const SplitPaneContainer: React.FC<SplitPaneContainerProps> = ({
       >
         {/* Top Pane Header */}
         <PaneHeader
-          title={topPaneTitle}
+          title={topPaneTitle || t('modelViewer.title')}
           paneType="model"
           paneState={paneStates.model}
           onMaximize={handleTopMaximize}
@@ -189,7 +191,7 @@ export const SplitPaneContainer: React.FC<SplitPaneContainerProps> = ({
       >
         {/* Bottom Pane Header */}
         <PaneHeader
-          title={bottomPaneTitle}
+          title={bottomPaneTitle || t('graphViewer.title')}
           paneType="graph"
           paneState={paneStates.graph}
           onMaximize={handleBottomMaximize}
