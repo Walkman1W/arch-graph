@@ -40,6 +40,7 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const cyRef = useRef<Core | null>(null);
+  const prevLayoutModeRef = useRef<LayoutMode | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
   const [localLayoutMode, setLocalLayoutMode] = useState<LayoutMode>(layoutMode);
   
@@ -202,6 +203,8 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
             style: {
               'border-width': '3px',
               'border-color': '#f59e0b',
+              'width': '60px',
+              'height': '60px',
               'background-color': (ele: NodeSingular) => {
                 const baseColor = getNodeTypeColor(ele.data('type') as GraphNodeType);
                 // Lighten the color for hover effect
@@ -328,6 +331,9 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
     const cy = cyRef.current;
     if (!cy) return;
     
+    // Get current layout mode
+    const mode = onLayoutModeChange ? layoutMode : localLayoutMode;
+    
     const connectedEdges = node.connectedEdges();
     const connectedNodes = connectedEdges.connectedNodes();
     
@@ -341,12 +347,17 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
     cy.animate({
       fit: {
         eles: relevantElements,
-        padding: 50,
+        padding: 50
       },
       duration: 300,
       easing: 'ease-out',
     });
-  }, [selectElement]);
+    
+    // In circular mode, prevent layout from running after click
+    if (mode === 'circular') {
+      cy.stop(true, true);
+    }
+  }, [selectElement, layoutMode, localLayoutMode, onLayoutModeChange]);
 
   const handleNodeHover = useCallback((event: any, isHovering: boolean) => {
     const node = event.target;
@@ -355,9 +366,17 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
     const cy = cyRef.current;
     if (!cy) return;
     
+    // Get current layout mode
+    const mode = onLayoutModeChange ? layoutMode : localLayoutMode;
+    
     if (isHovering) {
       setHoveredElement(nodeId);
       node.addClass('preview');
+      
+      // In force mode, stop layout animation when hovering
+      if (mode === 'force') {
+        cy.stop(true, true);
+      }
       
       // Highlight connected edges on hover
       const connectedEdges = node.connectedEdges();
@@ -368,8 +387,13 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
       
       // Remove edge highlights
       cy.edges().removeClass('preview-edge');
+      
+      // In force mode, resume layout animation after hover ends
+      if (mode === 'force') {
+        cy.layout(getLayoutOptions()).run();
+      }
     }
-  }, [setHoveredElement]);
+  }, [setHoveredElement, layoutMode, localLayoutMode, onLayoutModeChange, getLayoutOptions]);
 
   const expandNode = useCallback((nodeId: string) => {
     const cy = cyRef.current;
@@ -478,9 +502,25 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
     const cy = cyRef.current;
     if (!cy || !isInitialized) return;
 
-    // Always run layout when mode changes
-    cy.layout(getLayoutOptions()).run();
-  }, [layoutMode, localLayoutMode, isInitialized, getLayoutOptions]);
+    // Get current layout mode
+    const mode = onLayoutModeChange ? layoutMode : localLayoutMode;
+    
+    // Only run layout when mode changes, but avoid re-running in circular mode
+    // if the layout is already stable
+    if (mode === 'circular') {
+      // For circular layout, only run if it's a mode change from non-circular
+      const prevMode = prevLayoutModeRef.current;
+      if (prevMode !== 'circular') {
+        cy.layout(getLayoutOptions()).run();
+      }
+    } else {
+      // For other modes, always run layout when mode changes
+      cy.layout(getLayoutOptions()).run();
+    }
+    
+    // Update previous mode reference
+    prevLayoutModeRef.current = mode;
+  }, [layoutMode, localLayoutMode, isInitialized, getLayoutOptions, onLayoutModeChange]);
 
   useEffect(() => {
     const cy = cyRef.current;
