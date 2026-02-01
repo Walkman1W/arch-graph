@@ -29,10 +29,22 @@ export interface BIMQueryResponse extends BIMActionPayload {
 
 export interface MockBIMElement {
   id: string;
+  type: string;
   category: string;
   level: string;
   name: string;
   material: string;
+  properties?: Record<string, any>;
+  geometry?: {
+    type?: string;
+    position?: number[];
+    boundingBox?: {
+      min: number[];
+      max: number[];
+    };
+    vertices?: number[][];
+    center?: number[];
+  };
 }
 
 export interface Message {

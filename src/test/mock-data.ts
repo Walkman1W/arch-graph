@@ -1,4 +1,4 @@
-import { MockBIMElement } from '../types';
+import { MockBIMElement } from '../../types';
 
 export const mockBIMElements: MockBIMElement[] = [
   {

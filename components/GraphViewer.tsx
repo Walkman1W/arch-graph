@@ -159,70 +159,118 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
 
     console.log('GraphViewer: Initializing Cytoscape with container size:', rect.width, 'x', rect.height);
 
-    const cy = cytoscape({
-      container: container,
-      elements: [],
-      style: [
-        {
-          selector: 'node',
-          style: {
-            'background-color': (ele: NodeSingular) => getNodeTypeColor(ele.data('type') as GraphNodeType),
-            'label': 'data(label)',
-            'font-size': '12px',
-            'text-valign': 'center',
-            'text-halign': 'center',
-            'color': '#ffffff',
-            'text-outline-color': '#000000',
-            'text-outline-width': '2px',
-            'width': '40px',
-            'height': '40px',
-            'border-width': '2px',
-            'border-color': '#ffffff',
-            'transition-property': 'background-color, border-color, width, height',
-            'transition-duration': '0.2s',
+    try {
+      const cy = cytoscape({
+        container: container,
+        elements: [],
+        style: [
+          {
+            selector: 'node',
+            style: {
+              'background-color': (ele: NodeSingular) => getNodeTypeColor(ele.data('type') as GraphNodeType),
+              'label': 'data(label)',
+              'font-size': '10px',
+              'text-valign': 'center',
+              'text-halign': 'center',
+              'color': '#ffffff',
+              'text-outline-color': '#000000',
+              'text-outline-width': '1px',
+              'text-max-width': '30px',
+              'text-wrap': 'wrap',
+              'width': '60px',
+              'height': '60px',
+              'border-width': '2px',
+              'border-color': '#ffffff',
+              'transition-property': 'background-color, border-color',
+              'transition-duration': 0.2 as any,
+              'overlay-opacity': 0,
+              'z-index': 10,
+            },
           },
-        },
-        {
-          selector: 'node:selected',
-          style: {
-            'border-width': '4px',
-            'border-color': '#fbbf24',
-            'width': '50px',
-            'height': '50px',
+          {
+            selector: 'node:selected',
+            style: {
+              'border-width': '4px',
+              'border-color': '#fbbf24',
+              'width': '70px',
+              'height': '70px',
+              'z-index': 20,
+            },
           },
-        },
-        {
-          selector: 'node.preview',
-          style: {
-            'border-width': '3px',
-            'border-color': '#f59e0b',
-            'opacity': '0.8',
+          {
+            selector: 'node.preview',
+            style: {
+              'border-width': '3px',
+              'border-color': '#f59e0b',
+              'background-color': (ele: NodeSingular) => {
+                const baseColor = getNodeTypeColor(ele.data('type') as GraphNodeType);
+                // Lighten the color for hover effect
+                return baseColor + 'cc'; // Add transparency for highlight effect
+              },
+              'z-index': 15,
+            },
           },
-        },
-        {
-          selector: 'edge',
-          style: {
-            'width': '2px',
-            'line-color': '#94a3b8',
-            'target-arrow-color': '#94a3b8',
-            'target-arrow-shape': 'triangle',
-            'curve-style': 'bezier',
-            'opacity': '0.6',
+          {
+            selector: 'node.connected',
+            style: {
+              'border-width': '3px',
+              'border-color': '#3b82f6',
+              'background-color': (ele: NodeSingular) => {
+                const baseColor = getNodeTypeColor(ele.data('type') as GraphNodeType);
+                return baseColor + 'dd'; // Slightly more opaque
+              },
+              'z-index': 12,
+            },
           },
-        },
-      ],
-      layout: getLayoutOptions(),
-      wheelSensitivity: 0.3,
-      minZoom: 0.1,
-      maxZoom: 3,
-    });
+          {
+            selector: 'edge',
+            style: {
+              'width': '2px',
+              'line-color': '#94a3b8',
+              'target-arrow-color': '#94a3b8',
+              'target-arrow-shape': 'triangle',
+              'curve-style': 'bezier',
+              'opacity': 0.6 as any,
+              'z-index': 1,
+            },
+          },
+          {
+            selector: 'edge.preview-edge',
+            style: {
+              'width': '3px',
+              'line-color': '#f59e0b',
+              'target-arrow-color': '#f59e0b',
+              'opacity': 0.9 as any,
+              'z-index': 5,
+            },
+          },
+          {
+            selector: 'edge.connected',
+            style: {
+              'width': '3px',
+              'line-color': '#3b82f6',
+              'target-arrow-color': '#3b82f6',
+              'opacity': 0.9 as any,
+              'z-index': 3,
+            },
+          },
+        ],
+        layout: getLayoutOptions(),
+        wheelSensitivity: 0.3,
+        minZoom: 0.1,
+        maxZoom: 3,
+      });
 
-    cyRef.current = cy;
-    setIsInitialized(true);
+      cyRef.current = cy;
+      setIsInitialized(true);
 
-    console.log('GraphViewer: Cytoscape initialized successfully');
+      console.log('GraphViewer: Cytoscape initialized successfully');
 
-    return cy;
+      return cy;
+    } catch (error) {
+      console.error('GraphViewer: Failed to initialize Cytoscape:', error);
+      return null;
+    }
   }, [getNodeTypeColor, getLayoutOptions]);
 
   const updateGraphData = useCallback(() => {
@@ -234,31 +282,40 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
 
     console.log('GraphViewer: Updating graph data with', displayNodes.length, 'nodes and', displayEdges.length, 'edges');
 
-    const elements = [
-      ...displayNodes.map(node => ({
-        data: {
-          id: node.id,
-          label: node.label,
-          type: node.type,
-          properties: node.properties,
-          spaceId: node.spaceId,
-          systemId: node.systemId,
-        },
-      })),
-      ...displayEdges.map(edge => ({
-        data: {
-          id: edge.id,
-          source: edge.source,
-          target: edge.target,
-          type: edge.type,
-        },
-      })),
-    ];
+    try {
+      const elements = [
+        ...displayNodes.map(node => ({
+          data: {
+            id: node.id,
+            label: node.label,
+            type: node.type,
+            properties: node.properties,
+            spaceId: node.spaceId,
+            systemId: node.systemId,
+          },
+        })),
+        ...displayEdges.map(edge => ({
+          data: {
+            id: edge.id,
+            source: edge.source,
+            target: edge.target,
+            type: edge.type,
+          },
+        })),
+      ];
 
-    cy.json({ elements });
-    cy.layout(getLayoutOptions()).run();
+      cy.json({ elements });
+      
+      // Only run layout if we have elements
+      if (elements.length > 0) {
+        const layoutOptions = getLayoutOptions();
+        cy.layout(layoutOptions).run();
+      }
 
-    console.log('GraphViewer: Graph data updated and layout applied');
+      console.log('GraphViewer: Graph data updated and layout applied');
+    } catch (error) {
+      console.error('GraphViewer: Failed to update graph data:', error);
+    }
   }, [displayNodes, displayEdges, getLayoutOptions]);
 
   const handleNodeClick = useCallback((event: any) => {
@@ -267,10 +324,27 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
     
     selectElement(nodeId, 'graph');
     
-    cyRef.current?.animate({
-      center: { eles: node },
-      zoom: 1.5,
+    // Show connected nodes on click
+    const cy = cyRef.current;
+    if (!cy) return;
+    
+    const connectedEdges = node.connectedEdges();
+    const connectedNodes = connectedEdges.connectedNodes();
+    
+    // Highlight connected nodes
+    cy.elements().removeClass('highlighted connected');
+    connectedNodes.addClass('connected');
+    connectedEdges.addClass('connected');
+    
+    // Center on the node and its neighbors with a stable zoom
+    const relevantElements = node.union(connectedNodes);
+    cy.animate({
+      fit: {
+        eles: relevantElements,
+        padding: 50,
+      },
       duration: 300,
+      easing: 'ease-out',
     });
   }, [selectElement]);
 
@@ -278,12 +352,22 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
     const node = event.target;
     const nodeId = node.id();
     
+    const cy = cyRef.current;
+    if (!cy) return;
+    
     if (isHovering) {
       setHoveredElement(nodeId);
       node.addClass('preview');
+      
+      // Highlight connected edges on hover
+      const connectedEdges = node.connectedEdges();
+      connectedEdges.addClass('preview-edge');
     } else {
       setHoveredElement(null);
       node.removeClass('preview');
+      
+      // Remove edge highlights
+      cy.edges().removeClass('preview-edge');
     }
   }, [setHoveredElement]);
 
@@ -318,7 +402,7 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
     const cy = cyRef.current;
     if (!cy) return;
 
-    cy.elements().removeClass('preview');
+    cy.elements().removeClass('preview connected');
 
     selectedElements.forEach(elementId => {
       const element = cy.getElementById(elementId);
@@ -336,18 +420,47 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
     }
   }, [onLayoutModeChange]);
 
+  const currentLayoutMode = onLayoutModeChange ? layoutMode : localLayoutMode;
+
   useEffect(() => {
     const cy = initializeCytoscape();
     if (!cy) return;
 
-    cy.on('tap', 'node', handleNodeClick);
-    cy.on('mouseover', 'node', (event) => handleNodeHover(event, true));
-    cy.on('mouseout', 'node', (event) => handleNodeHover(event, false));
+    try {
+      cy.on('tap', 'node', handleNodeClick);
+      cy.on('mouseover', 'node', (event) => handleNodeHover(event, true));
+      cy.on('mouseout', 'node', (event) => handleNodeHover(event, false));
+      
+      // Enable node dragging for all layout modes
+      cy.on('drag', 'node', (event) => {
+        const node = event.target;
+        // Prevent layout from running while dragging
+        if (currentLayoutMode === 'force') {
+          cy.stop(true, true);
+        }
+      });
+      
+      // Handle double-click to reset view
+      cy.on('dblclick', (event) => {
+        if (event.target === cy) {
+          // Clicked on the background, reset view
+          cy.fit(undefined, 50);
+          cy.elements().removeClass('highlighted connected preview');
+          clearHighlights();
+        }
+      });
+    } catch (error) {
+      console.error('GraphViewer: Failed to set up event listeners:', error);
+    }
 
     return () => {
-      cy.destroy();
+      try {
+        cy.destroy();
+      } catch (error) {
+        console.error('GraphViewer: Failed to destroy Cytoscape instance:', error);
+      }
     };
-  }, [initializeCytoscape, handleNodeClick, handleNodeHover]);
+  }, [initializeCytoscape, handleNodeClick, handleNodeHover, currentLayoutMode, clearHighlights]);
 
   useEffect(() => {
     if (isInitialized) {
@@ -365,6 +478,7 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
     const cy = cyRef.current;
     if (!cy || !isInitialized) return;
 
+    // Always run layout when mode changes
     cy.layout(getLayoutOptions()).run();
   }, [layoutMode, localLayoutMode, isInitialized, getLayoutOptions]);
 
@@ -380,8 +494,6 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
       cy.container().style.pointerEvents = 'auto';
     }
   }, [paneState, isInitialized]);
-
-  const currentLayoutMode = onLayoutModeChange ? layoutMode : localLayoutMode;
 
   return (
     <div className="w-full h-full relative bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl overflow-hidden border border-slate-200 shadow-inner">

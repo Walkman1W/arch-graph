@@ -15,6 +15,7 @@ const generateMockElements = (count: number): MockBIMElement[] => {
   
   return Array.from({ length: count }, (_, i) => ({
     id: `el-${i}`,
+    type: 'element',
     category: categories[Math.floor(Math.random() * categories.length)],
     level: levels[Math.floor(Math.random() * levels.length)],
     name: `Element ${i + 1}`,
