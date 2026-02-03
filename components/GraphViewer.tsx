@@ -42,6 +42,8 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
   const cyRef = useRef<Core | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
   const [localLayoutMode, setLocalLayoutMode] = useState<LayoutMode>(layoutMode);
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const layoutRef = useRef<any>(null);
   
   const {
     selectedElements,
@@ -52,40 +54,34 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
     clearHighlights
   } = useLayoutState();
 
-  const generateMockData = useCallback(() => {
-    const mockNodes: GraphNode[] = [
-      { id: 'project-1', label: 'Building A', type: 'Project', properties: { name: 'Building A' } },
-      { id: 'level-1', label: 'Level 1', type: 'Level', properties: { floor: 1 } },
-      { id: 'level-2', label: 'Level 2', type: 'Level', properties: { floor: 2 } },
-      { id: 'space-1', label: 'Office 101', type: 'Space', properties: { area: '50 sqm' } },
-      { id: 'space-2', label: 'Office 102', type: 'Space', properties: { area: '45 sqm' } },
-      { id: 'space-3', label: 'Meeting Room', type: 'Space', properties: { area: '30 sqm' } },
-      { id: 'element-1', label: 'Wall 1', type: 'Element', properties: { material: 'Concrete' } },
-      { id: 'element-2', label: 'Door 1', type: 'Element', properties: { material: 'Wood' } },
-      { id: 'system-1', label: 'HVAC System', type: 'System', properties: { type: 'Heating' } },
-      { id: 'pipe-1', label: 'Pipe 1', type: 'Pipe', properties: { diameter: '50mm' } },
-    ];
+  const mockNodesRef = useRef<GraphNode[]>([
+    { id: 'project-1', label: 'Building A', type: 'Project', properties: { name: 'Building A' } },
+    { id: 'level-1', label: 'Level 1', type: 'Level', properties: { floor: 1 } },
+    { id: 'level-2', label: 'Level 2', type: 'Level', properties: { floor: 2 } },
+    { id: 'space-1', label: 'Office 101', type: 'Space', properties: { area: '50 sqm' } },
+    { id: 'space-2', label: 'Office 102', type: 'Space', properties: { area: '45 sqm' } },
+    { id: 'space-3', label: 'Meeting Room', type: 'Space', properties: { area: '30 sqm' } },
+    { id: 'element-1', label: 'Wall 1', type: 'Element', properties: { material: 'Concrete' } },
+    { id: 'element-2', label: 'Door 1', type: 'Element', properties: { material: 'Wood' } },
+    { id: 'system-1', label: 'HVAC System', type: 'System', properties: { type: 'Heating' } },
+    { id: 'pipe-1', label: 'Pipe 1', type: 'Pipe', properties: { diameter: '50mm' } },
+  ]);
 
-    const mockEdges: GraphEdge[] = [
-      { id: 'e1', source: 'project-1', target: 'level-1', type: 'HAS_LEVEL' },
-      { id: 'e2', source: 'project-1', target: 'level-2', type: 'HAS_LEVEL' },
-      { id: 'e3', source: 'level-1', target: 'space-1', type: 'CONTAINS' },
-      { id: 'e4', source: 'level-1', target: 'space-2', type: 'CONTAINS' },
-      { id: 'e5', source: 'level-2', target: 'space-3', type: 'CONTAINS' },
-      { id: 'e6', source: 'space-1', target: 'element-1', type: 'HAS_ELEMENT' },
-      { id: 'e7', source: 'space-1', target: 'element-2', type: 'HAS_ELEMENT' },
-      { id: 'e8', source: 'element-1', target: 'system-1', type: 'PART_OF_SYSTEM' },
-      { id: 'e9', source: 'pipe-1', target: 'space-1', type: 'PASSES_THROUGH' },
-      { id: 'e10', source: 'pipe-1', target: 'system-1', type: 'PART_OF_SYSTEM' },
-    ];
+  const mockEdgesRef = useRef<GraphEdge[]>([
+    { id: 'e1', source: 'project-1', target: 'level-1', type: 'HAS_LEVEL' },
+    { id: 'e2', source: 'project-1', target: 'level-2', type: 'HAS_LEVEL' },
+    { id: 'e3', source: 'level-1', target: 'space-1', type: 'CONTAINS' },
+    { id: 'e4', source: 'level-1', target: 'space-2', type: 'CONTAINS' },
+    { id: 'e5', source: 'level-2', target: 'space-3', type: 'CONTAINS' },
+    { id: 'e6', source: 'space-1', target: 'element-1', type: 'HAS_ELEMENT' },
+    { id: 'e7', source: 'space-1', target: 'element-2', type: 'HAS_ELEMENT' },
+    { id: 'e8', source: 'element-1', target: 'system-1', type: 'PART_OF_SYSTEM' },
+    { id: 'e9', source: 'pipe-1', target: 'space-1', type: 'PASSES_THROUGH' },
+    { id: 'e10', source: 'pipe-1', target: 'system-1', type: 'PART_OF_SYSTEM' },
+  ]);
 
-    return { mockNodes, mockEdges };
-  }, []);
-
-  const { mockNodes, mockEdges } = generateMockData();
-
-  const displayNodes = nodes.length > 0 ? nodes : mockNodes;
-  const displayEdges = edges.length > 0 ? edges : mockEdges;
+  const displayNodes = nodes.length > 0 ? nodes : mockNodesRef.current;
+  const displayEdges = edges.length > 0 ? edges : mockEdgesRef.current;
 
   const getNodeTypeColor = useCallback((type: GraphNodeType): string => {
     const colorMap: Record<GraphNodeType, string> = {
@@ -101,7 +97,7 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
     return colorMap[type] || '#6b7280';
   }, []);
 
-  const getLayoutOptions = useCallback((): LayoutOptions => {
+  const getLayoutOptions = useCallback((isInitial: boolean = false): LayoutOptions => {
     const mode = onLayoutModeChange ? layoutMode : localLayoutMode;
     
     switch (mode) {
@@ -110,7 +106,7 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
           name: 'breadthfirst',
           directed: true,
           spacingFactor: 1.5,
-          animate: true,
+          animate: isInitial,
           animationDuration: 500,
         };
       case 'circular':
@@ -118,7 +114,7 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
           name: 'circle',
           fit: true,
           padding: 30,
-          animate: true,
+          animate: isInitial,
           animationDuration: 500,
         };
       case 'force':
@@ -140,11 +136,18 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
           initialTemp: 200,
           coolingFactor: 0.95,
           minTemp: 1.0,
-          animate: true,
+          animate: isInitial,
           animationDuration: 500,
         };
     }
   }, [layoutMode, localLayoutMode, onLayoutModeChange]);
+
+  const stopLayout = useCallback(() => {
+    if (layoutRef.current) {
+      layoutRef.current.stop();
+      layoutRef.current = null;
+    }
+  }, []);
 
   const initializeCytoscape = useCallback(() => {
     if (!containerRef.current) return null;
@@ -168,17 +171,20 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
           style: {
             'background-color': (ele: NodeSingular) => getNodeTypeColor(ele.data('type') as GraphNodeType),
             'label': 'data(label)',
-            'font-size': '12px',
+            'font-size': '9px',
             'text-valign': 'center',
             'text-halign': 'center',
             'color': '#ffffff',
             'text-outline-color': '#000000',
-            'text-outline-width': '2px',
-            'width': '40px',
-            'height': '40px',
+            'text-outline-width': '1px',
+            'text-max-width': '45px',
+            'text-wrap': 'wrap',
+            'text-overflow-wrap': 'anywhere',
+            'width': '60px',
+            'height': '60px',
             'border-width': '2px',
             'border-color': '#ffffff',
-            'transition-property': 'background-color, border-color, width, height',
+            'transition-property': 'background-color, border-color, opacity',
             'transition-duration': '0.2s',
           },
         },
@@ -187,16 +193,13 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
           style: {
             'border-width': '4px',
             'border-color': '#fbbf24',
-            'width': '50px',
-            'height': '50px',
           },
         },
         {
-          selector: 'node.preview',
+          selector: 'node.hover',
           style: {
             'border-width': '3px',
             'border-color': '#f59e0b',
-            'opacity': '0.8',
           },
         },
         {
@@ -211,10 +214,14 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
           },
         },
       ],
-      layout: getLayoutOptions(),
+      layout: getLayoutOptions(true),
       wheelSensitivity: 0.3,
       minZoom: 0.1,
       maxZoom: 3,
+    });
+
+    cy.on('grab', 'node', () => {
+      stopLayout();
     });
 
     cyRef.current = cy;
@@ -223,19 +230,30 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
     console.log('GraphViewer: Cytoscape initialized successfully');
 
     return cy;
-  }, [getNodeTypeColor, getLayoutOptions]);
+  }, [getNodeTypeColor]);
 
-  const updateGraphData = useCallback(() => {
+  const displayNodesRef = useRef(displayNodes);
+  const displayEdgesRef = useRef(displayEdges);
+  
+  useEffect(() => {
+    displayNodesRef.current = displayNodes;
+    displayEdgesRef.current = displayEdges;
+  }, [displayNodes, displayEdges]);
+
+  const updateGraphData = useCallback((shouldAnimate: boolean = true) => {
     const cy = cyRef.current;
     if (!cy) {
       console.warn('GraphViewer: Cytoscape instance not available for data update');
       return;
     }
 
-    console.log('GraphViewer: Updating graph data with', displayNodes.length, 'nodes and', displayEdges.length, 'edges');
+    const currentNodes = displayNodesRef.current;
+    const currentEdges = displayEdgesRef.current;
+
+    console.log('GraphViewer: Updating graph data with', currentNodes.length, 'nodes and', currentEdges.length, 'edges');
 
     const elements = [
-      ...displayNodes.map(node => ({
+      ...currentNodes.map(node => ({
         data: {
           id: node.id,
           label: node.label,
@@ -245,7 +263,7 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
           systemId: node.systemId,
         },
       })),
-      ...displayEdges.map(edge => ({
+      ...currentEdges.map(edge => ({
         data: {
           id: edge.id,
           source: edge.source,
@@ -256,10 +274,13 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
     ];
 
     cy.json({ elements });
-    cy.layout(getLayoutOptions()).run();
+    
+    stopLayout();
+    layoutRef.current = cy.layout(getLayoutOptions(shouldAnimate));
+    layoutRef.current.run();
 
     console.log('GraphViewer: Graph data updated and layout applied');
-  }, [displayNodes, displayEdges, getLayoutOptions]);
+  }, [getLayoutOptions, stopLayout]);
 
   const handleNodeClick = useCallback((event: any) => {
     const node = event.target;
@@ -267,25 +288,68 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
     
     selectElement(nodeId, 'graph');
     
-    cyRef.current?.animate({
-      center: { eles: node },
-      zoom: 1.5,
-      duration: 300,
-    });
-  }, [selectElement]);
+    const isSameNode = selectedNodeId === nodeId;
+    if (isSameNode) {
+      setSelectedNodeId(null);
+    } else {
+      setSelectedNodeId(nodeId);
+    }
+  }, [selectElement, selectedNodeId]);
 
+  const hoveredNodeRef = useRef<string | null>(null);
+  
   const handleNodeHover = useCallback((event: any, isHovering: boolean) => {
     const node = event.target;
     const nodeId = node.id();
     
     if (isHovering) {
-      setHoveredElement(nodeId);
-      node.addClass('preview');
+      if (hoveredNodeRef.current !== nodeId) {
+        hoveredNodeRef.current = nodeId;
+        setHoveredElement(nodeId);
+        node.addClass('hover');
+      }
     } else {
-      setHoveredElement(null);
-      node.removeClass('preview');
+      if (hoveredNodeRef.current === nodeId) {
+        hoveredNodeRef.current = null;
+        setHoveredElement(null);
+        node.removeClass('hover');
+      }
     }
   }, [setHoveredElement]);
+
+  const showNeighbors = useCallback((nodeId: string | null) => {
+    const cy = cyRef.current;
+    if (!cy) return;
+
+    if (!nodeId) {
+      cy.elements().style('opacity', '1');
+      return;
+    }
+
+    const node = cy.getElementById(nodeId);
+    if (!node || node.length === 0) return;
+
+    const connectedEdges = node.connectedEdges();
+    const connectedNodes = connectedEdges.connectedNodes();
+    const neighborIds = new Set(connectedNodes.map((n: NodeSingular) => n.id()));
+    neighborIds.add(nodeId);
+
+    cy.nodes().forEach((n: NodeSingular) => {
+      if (neighborIds.has(n.id())) {
+        n.style('opacity', '1');
+      } else {
+        n.style('opacity', '0.2');
+      }
+    });
+
+    cy.edges().forEach((e: EdgeSingular) => {
+      if (connectedEdges.includes(e)) {
+        e.style('opacity', '0.8');
+      } else {
+        e.style('opacity', '0.1');
+      }
+    });
+  }, []);
 
   const expandNode = useCallback((nodeId: string) => {
     const cy = cyRef.current;
@@ -318,8 +382,6 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
     const cy = cyRef.current;
     if (!cy) return;
 
-    cy.elements().removeClass('preview');
-
     selectedElements.forEach(elementId => {
       const element = cy.getElementById(elementId);
       if (element) {
@@ -345,15 +407,20 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
     cy.on('mouseout', 'node', (event) => handleNodeHover(event, false));
 
     return () => {
+      stopLayout();
       cy.destroy();
     };
-  }, [initializeCytoscape, handleNodeClick, handleNodeHover]);
+  }, [initializeCytoscape, handleNodeClick, handleNodeHover, stopLayout]);
+
+  useEffect(() => {
+    showNeighbors(selectedNodeId);
+  }, [selectedNodeId, showNeighbors]);
 
   useEffect(() => {
     if (isInitialized) {
-      updateGraphData();
+      updateGraphData(true);
     }
-  }, [isInitialized, updateGraphData]);
+  }, [isInitialized]);
 
   useEffect(() => {
     if (isInitialized) {
@@ -365,8 +432,10 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
     const cy = cyRef.current;
     if (!cy || !isInitialized) return;
 
-    cy.layout(getLayoutOptions()).run();
-  }, [layoutMode, localLayoutMode, isInitialized, getLayoutOptions]);
+    stopLayout();
+    layoutRef.current = cy.layout(getLayoutOptions(true));
+    layoutRef.current.run();
+  }, [layoutMode, localLayoutMode, isInitialized, getLayoutOptions, stopLayout]);
 
   useEffect(() => {
     const cy = cyRef.current;
