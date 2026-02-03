@@ -122,18 +122,23 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
       case 'force':
       default:
         return {
-          name: 'cose-bilkent',
+          name: 'cose',
           idealEdgeLength: 100,
-          edgeElasticity: 0.45,
-          nestingFactor: 0.1,
-          gravity: 0.25,
-          numIter: 2500,
-          tile: true,
-          animate: false,
-          animationDuration: 0,
+          nodeOverlap: 20,
+          refresh: 20,
           fit: true,
           padding: 30,
           randomize: false,
+          componentSpacing: 100,
+          nodeRepulsion: 400000,
+          edgeElasticity: 100,
+          nestingFactor: 5,
+          gravity: 80,
+          numIter: 1000,
+          initialTemp: 200,
+          coolingFactor: 0.95,
+          minTemp: 1.0,
+          animate: false,
         };
     }
   }, [layoutMode, localLayoutMode, onLayoutModeChange]);
