@@ -1,5 +1,6 @@
 import React from 'react';
 import { PaneType, PaneState } from '../types';
+import { useI18n } from '../contexts/I18nContext';
 
 interface PaneHeaderProps {
   title: string;
@@ -18,6 +19,8 @@ export const PaneHeader: React.FC<PaneHeaderProps> = ({
   onMinimize,
   onRestore,
 }) => {
+  const { t } = useI18n();
+
   // Determine which buttons to show based on current state
   const showMaximizeButton = paneState === 'normal';
   const showRestoreButton = paneState === 'maximized' || paneState === 'minimized';
@@ -35,8 +38,8 @@ export const PaneHeader: React.FC<PaneHeaderProps> = ({
           <button
             onClick={onMinimize}
             className="p-1.5 hover:bg-slate-200 rounded transition-colors"
-            title="最小化"
-            aria-label={`最小化 ${title}`}
+            title={t('pane.minimize') as string}
+            aria-label={`${t('pane.minimize') as string} ${title}`}
           >
             <svg
               className="w-4 h-4 text-slate-600"
@@ -59,8 +62,8 @@ export const PaneHeader: React.FC<PaneHeaderProps> = ({
           <button
             onClick={onMaximize}
             className="p-1.5 hover:bg-slate-200 rounded transition-colors"
-            title="最大化"
-            aria-label={`最大化 ${title}`}
+            title={t('pane.maximize') as string}
+            aria-label={`${t('pane.maximize') as string} ${title}`}
           >
             <svg
               className="w-4 h-4 text-slate-600"
@@ -83,8 +86,8 @@ export const PaneHeader: React.FC<PaneHeaderProps> = ({
           <button
             onClick={onRestore}
             className="p-1.5 hover:bg-slate-200 rounded transition-colors"
-            title="恢复"
-            aria-label={`恢复 ${title}`}
+            title={t('pane.restore') as string}
+            aria-label={`${t('pane.restore') as string} ${title}`}
           >
             <svg
               className="w-4 h-4 text-slate-600"

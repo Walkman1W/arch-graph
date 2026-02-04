@@ -1,6 +1,7 @@
 import React, { useRef, useState, useCallback, useEffect } from 'react';
 import { useLayoutState } from '../contexts/LayoutStateProvider';
 import { PaneHeader } from './PaneHeader';
+import { useI18n } from '../contexts/I18nContext';
 
 interface SplitPaneContainerProps {
   topPane: React.ReactNode;
@@ -15,12 +16,13 @@ interface SplitPaneContainerProps {
 export const SplitPaneContainer: React.FC<SplitPaneContainerProps> = ({
   topPane,
   bottomPane,
-  topPaneTitle = '模型查看器',
-  bottomPaneTitle = '图谱查看器',
+  topPaneTitle,
+  bottomPaneTitle,
   defaultSplitRatio = 0.6,
   minPaneHeight = 0.2,
   maxPaneHeight = 0.8,
 }) => {
+  const { t } = useI18n();
   const containerRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const { 
@@ -31,6 +33,10 @@ export const SplitPaneContainer: React.FC<SplitPaneContainerProps> = ({
     minimizePane,
     restorePane,
   } = useLayoutState();
+
+  // Use translated titles as defaults
+  const finalTopPaneTitle = topPaneTitle || (t('modelViewer.title') as string);
+  const finalBottomPaneTitle = bottomPaneTitle || (t('graphViewer.title') as string);
 
   // Handle mouse down on divider
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
@@ -147,7 +153,7 @@ export const SplitPaneContainer: React.FC<SplitPaneContainerProps> = ({
       >
         {/* Top Pane Header */}
         <PaneHeader
-          title={topPaneTitle}
+          title={finalTopPaneTitle}
           paneType="model"
           paneState={paneStates.model}
           onMaximize={handleTopMaximize}
@@ -189,7 +195,7 @@ export const SplitPaneContainer: React.FC<SplitPaneContainerProps> = ({
       >
         {/* Bottom Pane Header */}
         <PaneHeader
-          title={bottomPaneTitle}
+          title={finalBottomPaneTitle}
           paneType="graph"
           paneState={paneStates.graph}
           onMaximize={handleBottomMaximize}

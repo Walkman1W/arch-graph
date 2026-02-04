@@ -4,28 +4,48 @@ import SpeckleViewer from './components/SpeckleViewer';
 import ControlPanel from './components/ControlPanel';
 import ProjectModal from './components/ProjectModal';
 import { LayoutStateProvider } from './contexts/LayoutStateProvider';
+import { I18nProvider } from './contexts/I18nContext';
 import { SplitPaneContainer } from './components/SplitPaneContainer';
+import { useI18n } from './contexts/I18nContext';
 import { BIMQueryResponse, BIMOperation, MockBIMElement, Project, ProjectModalState, ProjectFormData } from './types';
 
 const DEFAULT_SPECKLE_URL = 'https://app.speckle.systems/projects/0876633ea1/models/1e05934141?embedToken=3d3c2e0ab4878e7d01b16a1608e78e03848887eed4#embed=%7B%22isEnabled%22%3Atrue%7D';
 
 const STORAGE_KEY = 'smartbim_projects';
 
-const loadProjectsFromStorage = (): Project[] => {
+// Default project keys for i18n - actual display names come from translations
+const DEFAULT_PROJECT_ID = 'project-default';
+const DEFAULT_PROJECT_KEY = 'defaultProject';
+
+const loadProjectsFromStorage = (language: 'en' | 'zh' = 'en'): Project[] => {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
-      return JSON.parse(stored);
+      // Check if we need to update default project name based on language
+      const projects = JSON.parse(stored);
+      const defaultProject = projects.find((p: Project) => p.id === DEFAULT_PROJECT_ID);
+      if (defaultProject) {
+        // Update default project name/description based on current language
+        defaultProject.name = language === 'zh' ? '示例建筑模型' : 'Sample Building Model';
+        defaultProject.description = language === 'zh' 
+          ? '默认示例项目，展示基本的建筑模型结构' 
+          : 'Default sample project showcasing basic building model structure';
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
+      }
+      return projects;
     }
   } catch (error) {
     console.error('Failed to load projects from localStorage:', error);
   }
   
+  // Create default project based on language
   const defaultProject: Project = {
-    id: 'project-default',
-    name: '示例建筑模型',
+    id: DEFAULT_PROJECT_ID,
+    name: language === 'zh' ? '示例建筑模型' : 'Sample Building Model',
     speckleUrl: DEFAULT_SPECKLE_URL,
-    description: '默认示例项目，展示基本的建筑模型结构',
+    description: language === 'zh' 
+      ? '默认示例项目，展示基本的建筑模型结构' 
+      : 'Default sample project showcasing basic building model structure',
     thumbnail: undefined,
     createdAt: Date.now(),
     isActive: true,
@@ -57,7 +77,9 @@ const generateMockElements = (count: number): MockBIMElement[] => {
   }));
 };
 
-const App: React.FC = () => {
+// Inner App component that uses i18n
+const AppContent: React.FC = () => {
+  const { t, language } = useI18n();
   const [allElements] = useState<MockBIMElement[]>(generateMockElements(500));
   const [activeElements, setActiveElements] = useState<MockBIMElement[]>([]);
   const [currentFilter, setCurrentFilter] = useState<BIMQueryResponse | null>(null);
@@ -72,10 +94,17 @@ const App: React.FC = () => {
     setActiveElements(allElements);
   }, [allElements]);
 
+  // Load projects when component mounts
   useEffect(() => {
-    const storedProjects = loadProjectsFromStorage();
+    const storedProjects = loadProjectsFromStorage(language);
     setProjects(storedProjects);
   }, []);
+
+  // Update default project name when language changes
+  useEffect(() => {
+    const updatedProjects = loadProjectsFromStorage(language);
+    setProjects(updatedProjects);
+  }, [language]);
 
   const handleCommand = (response: BIMQueryResponse) => {
     setCurrentFilter(response);
@@ -161,8 +190,6 @@ const App: React.FC = () => {
           {/* Left Side: Split Pane Container (70-75% width) */}
           <div className="flex-[0.7] lg:flex-[0.75] min-w-0">
             <SplitPaneContainer
-              topPaneTitle="3D 模型查看器"
-              bottomPaneTitle="图谱可视化"
               topPane={
                 <div className="relative w-full h-full">
                   <SpeckleViewer embedUrl={currentProject?.speckleUrl || DEFAULT_SPECKLE_URL} />
@@ -172,8 +199,8 @@ const App: React.FC = () => {
                     <div className="bg-white/90 backdrop-blur shadow-sm border border-slate-200 rounded-lg px-4 py-2 flex items-center gap-3 pointer-events-auto">
                       <div className={`w-2 h-2 rounded-full ${activeElements.length < allElements.length ? 'bg-blue-500' : 'bg-slate-300'}`}></div>
                       <div>
-                        <p className="text-xs text-slate-500 uppercase font-bold tracking-wider">Visibility</p>
-                        <p className="text-sm font-semibold text-slate-800">{activeElements.length} / {allElements.length} Elements</p>
+                        <p className="text-xs text-slate-500 uppercase font-bold tracking-wider">{t('modelViewer.visibility') as string}</p>
+                        <p className="text-sm font-semibold text-slate-800">{activeElements.length} / {allElements.length} {t('modelViewer.elements') as string}</p>
                       </div>
                     </div>
                   </div>
@@ -199,8 +226,8 @@ const App: React.FC = () => {
                 <div className="w-full h-full bg-gradient-to-br from-green-50 to-green-100 flex items-center justify-center">
                   <div className="text-center">
                     <div className="text-6xl mb-4">🕸️</div>
-                    <h2 className="text-2xl font-bold text-slate-700 mb-2">图谱可视化</h2>
-                    <p className="text-slate-600">Cytoscape.js 图谱将在任务 6 中实现</p>
+                    <h2 className="text-2xl font-bold text-slate-700 mb-2">{t('graphViewer.title') as string}</h2>
+                    <p className="text-slate-600">{t('graphViewer.placeholder') as string}</p>
                   </div>
                 </div>
               }
@@ -228,6 +255,15 @@ const App: React.FC = () => {
         />
       </div>
     </LayoutStateProvider>
+  );
+};
+
+// Main App component with providers
+const App: React.FC = () => {
+  return (
+    <I18nProvider>
+      <AppContent />
+    </I18nProvider>
   );
 };
 
