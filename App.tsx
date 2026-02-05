@@ -4,14 +4,15 @@ import SpeckleViewer from './components/SpeckleViewer';
 import ControlPanel from './components/ControlPanel';
 import { LayoutStateProvider } from './contexts/LayoutStateProvider';
 import { SplitPaneContainer } from './components/SplitPaneContainer';
-import { BIMQueryResponse, BIMOperation, MockBIMElement } from './types';
+import { useProjects } from './hooks/useProjects';
+import { BIMQueryResponse, BIMOperation, MockBIMElement, Project } from './types';
 
 // Mock data generator for simulation
 const generateMockElements = (count: number): MockBIMElement[] => {
   const categories = ['Walls', 'Columns', 'Slabs', 'Windows', 'Doors', 'Beams', 'HVAC'];
   const levels = ['Foundation', 'Level 1', 'Level 2', 'Roof'];
   const materials = ['Concrete', 'Brick', 'Glass', 'Steel', 'Timber'];
-  
+
   return Array.from({ length: count }, (_, i) => ({
     id: `el-${i}`,
     category: categories[Math.floor(Math.random() * categories.length)],
@@ -26,13 +27,27 @@ const App: React.FC = () => {
   const [activeElements, setActiveElements] = useState<MockBIMElement[]>([]);
   const [currentFilter, setCurrentFilter] = useState<BIMQueryResponse | null>(null);
 
+  // 项目管理
+  const { isLoaded, getActiveProject, setActiveProject } = useProjects();
+  const [currentProject, setCurrentProject] = useState<Project | null>(null);
+
+  // 初始化加载活动项目
+  useEffect(() => {
+    if (isLoaded) {
+      const activeProject = getActiveProject();
+      if (activeProject) {
+        setCurrentProject(activeProject);
+      }
+    }
+  }, [isLoaded, getActiveProject]);
+
   useEffect(() => {
     setActiveElements(allElements);
   }, [allElements]);
 
   const handleCommand = (response: BIMQueryResponse) => {
     setCurrentFilter(response);
-    
+
     if (response.operation === BIMOperation.RESET) {
       setActiveElements(allElements);
       return;
@@ -43,7 +58,7 @@ const App: React.FC = () => {
     if (response.category) {
       filtered = filtered.filter(e => e.category.toLowerCase().includes(response.category!.toLowerCase()));
     }
-    
+
     if (response.level) {
       filtered = filtered.filter(e => e.level.toLowerCase().includes(response.level!.toLowerCase()));
     }
@@ -55,21 +70,47 @@ const App: React.FC = () => {
     setActiveElements(filtered);
   };
 
+  // 处理项目切换
+  const handleProjectChange = (project: Project) => {
+    setCurrentProject(project);
+    setActiveProject(project.id);
+  };
+
+  // 获取 embed URL
+  const getEmbedUrl = (project: Project | null): string => {
+    if (!project) {
+      // 默认项目 URL
+      return 'https://app.speckle.systems/projects/0876633ea1/models/1e05934141?embedToken=3d3c2e0ab4878e7d01b16a1608e78e03848887eed4#embed=%7B%22isEnabled%22%3Atrue%7D';
+    }
+
+    // 如果 URL 已经包含 embed 参数，直接返回
+    if (project.speckleUrl.includes('embed=')) {
+      return project.speckleUrl;
+    }
+
+    // 添加 embed 参数
+    const separator = project.speckleUrl.includes('?') ? '&' : '?';
+    return `${project.speckleUrl}${separator}embed=%7B%22isEnabled%22%3Atrue%7D`;
+  };
+
   return (
     <LayoutStateProvider>
       <div className="flex flex-col h-screen bg-slate-50 overflow-hidden">
-        <DashboardHeader />
-        
+        <DashboardHeader
+          onProjectChange={handleProjectChange}
+          currentProject={currentProject}
+        />
+
         <main className="flex-1 flex overflow-hidden">
           {/* Left Side: Split Pane Container (70-75% width) */}
           <div className="flex-[0.7] lg:flex-[0.75] min-w-0">
             <SplitPaneContainer
-              topPaneTitle="3D 模型查看器"
+              topPaneTitle={currentProject ? `3D 模型 - ${currentProject.name}` : "3D 模型查看器"}
               bottomPaneTitle="图谱可视化"
               topPane={
                 <div className="relative w-full h-full">
-                  <SpeckleViewer embedUrl="https://app.speckle.systems/projects/0876633ea1/models/1e05934141?embedToken=3d3c2e0ab4878e7d01b16a1608e78e03848887eed4#embed=%7B%22isEnabled%22%3Atrue%7D" />
-                  
+                  <SpeckleViewer embedUrl={getEmbedUrl(currentProject)} />
+
                   {/* Status Overlay (Top Left) */}
                   <div className="absolute top-4 left-4 z-20 flex flex-col gap-2 pointer-events-none">
                     <div className="bg-white/90 backdrop-blur shadow-sm border border-slate-200 rounded-lg px-4 py-2 flex items-center gap-3 pointer-events-auto">
@@ -79,6 +120,15 @@ const App: React.FC = () => {
                         <p className="text-sm font-semibold text-slate-800">{activeElements.length} / {allElements.length} Elements</p>
                       </div>
                     </div>
+                    {currentProject && (
+                      <div className="bg-white/90 backdrop-blur shadow-sm border border-slate-200 rounded-lg px-4 py-2 flex items-center gap-3 pointer-events-auto">
+                        <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                        <div>
+                          <p className="text-xs text-slate-500 uppercase font-bold tracking-wider">Project</p>
+                          <p className="text-sm font-semibold text-slate-800 truncate max-w-[150px]">{currentProject.name}</p>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Current Active Filter Tags (Bottom Left) */}
@@ -112,7 +162,7 @@ const App: React.FC = () => {
 
           {/* Right Side: Control Panel (25-30% width) */}
           <div className="flex-[0.3] lg:flex-[0.25] min-w-0">
-            <ControlPanel 
+            <ControlPanel
               onCommandProcessed={handleCommand}
               filteredCount={activeElements.length}
             />
